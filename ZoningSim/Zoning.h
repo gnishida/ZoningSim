@@ -50,6 +50,9 @@ private:
 	void addCommercialJobs(int num);
 	void removeIndustrialJobs(int num);
 	void addIndustrialJobs(int num);
+	float lifeValue(int x, int y);
+	float shopValue(int x, int y);
+	float factoryValue(int x, int y);
 	void updateZones();
 
 	QVector2D gridToCity(const QVector2D& pt);

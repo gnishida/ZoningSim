@@ -64,6 +64,9 @@ void Zoning::nextStep() {
 	updatePeopleAndJobs();
 
 	updateZones();
+
+	computeActivity();
+	computePollution();
 }
 
 /**
@@ -138,6 +141,9 @@ void Zoning::computeActivity() {
 			}
 		}
 	}
+
+	cout << "Activity: " << endl;
+	cout << activity << endl;
 }
 
 /**
@@ -174,6 +180,9 @@ void Zoning::computePollution() {
 			pollution(r, c) = min(pollution(r, c), 1.0f);
 		}
 	}
+
+	cout << "Pollution: " << endl;
+	cout << pollution << endl;
 }
 
 /**
@@ -196,6 +205,7 @@ void Zoning::updateLandValue() {
 		}
 	}
 
+	cout << "Land value:" << endl;
 	cout << landValue << endl;
 }
 
@@ -286,15 +296,7 @@ void Zoning::addPeople(int num) {
 			int c = Util::genRand(0, grid_size);
 			cells.push_back(QVector2D(c, r));
 
-			float quality = weights["accessibility_life"] * accessibility(r, c)
-				+ weights["activity_life"] * activity(r, c)
-				+ weights["pollution_life"] * pollution(r, c)
-				+ weights["slope_life"] * slope(r, c)
-				+ weights["landvalue_life"] * landValue(r, c)
-				+ weights["population_life"] * population(r, c)
-				+ weights["commercialjobs_life"] * commercialJobs(r, c)
-				+ weights["industrialjobs_life"] * industrialJobs(r, c);
-			pdf.push_back(exp(quality));
+			pdf.push_back(exp(lifeValue(c, r)));
 		}
 
 		int id = Util::sampleFromPdf(pdf);
@@ -333,15 +335,7 @@ void Zoning::addCommercialJobs(int num) {
 			int c = Util::genRand(0, grid_size);
 			cells.push_back(QVector2D(c, r));
 
-			float quality = weights["accessibility_shop"] * accessibility(r, c)
-				+ weights["activity_shop"] * activity(r, c)
-				+ weights["pollution_shop"] * pollution(r, c)
-				+ weights["slope_shop"] * slope(r, c)
-				+ weights["landvalue_shop"] * landValue(r, c)
-				+ weights["population_shop"] * population(r, c)
-				+ weights["commercialjobs_shop"] * commercialJobs(r, c)
-				+ weights["industrialjobs_shop"] * industrialJobs(r, c);
-			pdf.push_back(exp(quality));
+			pdf.push_back(exp(shopValue(c, r)));
 		}
 
 		int id = Util::sampleFromPdf(pdf);
@@ -380,15 +374,7 @@ void Zoning::addIndustrialJobs(int num) {
 			int c = Util::genRand(0, grid_size);
 			cells.push_back(QVector2D(c, r));
 
-			float quality = weights["accessibility_factory"] * accessibility(r, c)
-				+ weights["activity_factory"] * activity(r, c)
-				+ weights["pollution_factory"] * pollution(r, c)
-				+ weights["slope_factory"] * slope(r, c)
-				+ weights["landvalue_factory"] * landValue(r, c)
-				+ weights["population_factory"] * population(r, c)
-				+ weights["commercialjobs_factory"] * commercialJobs(r, c)
-				+ weights["industrialjobs_factory"] * industrialJobs(r, c);
-			pdf.push_back(exp(quality));
+			pdf.push_back(exp(factoryValue(c, r)));
 		}
 
 		int id = Util::sampleFromPdf(pdf);
@@ -396,6 +382,43 @@ void Zoning::addIndustrialJobs(int num) {
 		num--;
 	}
 }
+
+/**
+ * 指定されたセルの生活価値を返却する。
+ */
+float Zoning::lifeValue(int x, int y) {
+	return weights["accessibility_life"] * accessibility(y, x)
+		+ weights["activity_life"] * activity(y, x)
+		+ weights["pollution_life"] * pollution(y, x)
+		+ weights["slope_life"] * slope(y, x)
+		+ weights["landvalue_life"] * landValue(y, x)
+		+ weights["population_life"] * population(y, x)
+		+ weights["commercialjobs_life"] * commercialJobs(y, x)
+		+ weights["industrialjobs_life"] * industrialJobs(y, x);
+}
+
+float Zoning::shopValue(int c, int r) {
+	return weights["accessibility_shop"] * accessibility(r, c)
+		+ weights["activity_shop"] * activity(r, c)
+		+ weights["pollution_shop"] * pollution(r, c)
+		+ weights["slope_shop"] * slope(r, c)
+		+ weights["landvalue_shop"] * landValue(r, c)
+		+ weights["population_shop"] * population(r, c)
+		+ weights["commercialjobs_shop"] * commercialJobs(r, c)
+		+ weights["industrialjobs_shop"] * industrialJobs(r, c);
+}
+
+float Zoning::factoryValue(int c, int r) {
+	return weights["accessibility_factory"] * accessibility(r, c)
+		+ weights["activity_factory"] * activity(r, c)
+		+ weights["pollution_factory"] * pollution(r, c)
+		+ weights["slope_factory"] * slope(r, c)
+		+ weights["landvalue_factory"] * landValue(r, c)
+		+ weights["population_factory"] * population(r, c)
+		+ weights["commercialjobs_factory"] * commercialJobs(r, c)
+		+ weights["industrialjobs_factory"] * industrialJobs(r, c);
+}
+
 
 /**
  * ゾーンを更新する。
