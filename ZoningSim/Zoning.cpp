@@ -2,10 +2,14 @@
 #include "Util.h"
 #include "GraphUtil.h"
 
-Zoning::Zoning(float city_length, int grid_size) {
+const int Zoning::MAX_POPULATION = 500;
+const int Zoning::MAX_JOBS = 500;
+
+Zoning::Zoning(float city_length, int grid_size, const QMap<QString, float>& weights) {
 	this->city_length = city_length;
 	this->grid_size = grid_size;
 	this->cell_length = city_length / grid_size;
+	this->weights = weights;
 
 	zones = Mat_<uchar>(grid_size, grid_size);
 	accessibility = Mat_<float>::zeros(grid_size, grid_size);
@@ -24,6 +28,19 @@ Zoning::Zoning(float city_length, int grid_size) {
 		}
 	}
 
+	// 人、仕事を初期化
+	for (int r = 0; r < grid_size; ++r) {
+		for (int c = 0; c < grid_size; ++c) {
+			if (zones(r, c) == TYPE_RESIDENTIAL) {
+				population(r, c) = Util::genRand(10, 100);
+			} else if (zones(r, c) == TYPE_COMMERCIAL) {
+				commercialJobs(r, c) = Util::genRand(10, 100);
+			} else if (zones(r, c) == TYPE_INDUSTRIAL) {
+				industrialJobs(r, c) = Util::genRand(10, 100);
+			}
+		}
+	}
+
 	computeActivity();
 	computePollution();
 }
@@ -32,13 +49,6 @@ void Zoning::setRoads(RoadGraph& roads) {
 	this->roads = roads;
 
 	computeAccessibility();
-}
-
-/**
- * パラメータをセットする
- */
-void Zoning::setWeights(const QMap<QString, float>& weights) {
-	this->weights = weights;
 }
 
 /**
@@ -92,54 +102,65 @@ void Zoning::computeAccessibility() {
  * アクティビティを計算する
  */
 void Zoning::computeActivity() {
+	activity = Mat_<float>::zeros(grid_size, grid_size);
+
+	// アクティビティが広がる最大距離
+	const float dist_max = 1000.0f;
+
+	int window_size = dist_max / cell_length + 0.5f;
+
 	for (int r = 0; r < grid_size; ++r) {
 		for (int c = 0; c < grid_size; ++c) {
-			activity(r, c) = computeActivity(c, r);
+			if (zones(r, c) != TYPE_RESIDENTIAL && zones(r, c) != TYPE_COMMERCIAL) continue;
+
+			// 当該セルの周辺セルに、アクティビティを追加する
+			for (int dr = -window_size; dr <= window_size; ++dr) {
+				if (r + dr < 0 || r + dr >= grid_size) continue;
+				for (int dc = -window_size; dc <= window_size; ++dc) {
+					if (c + dc < 0 || c + dc >= grid_size) continue;
+
+					float dist = sqrt(SQR(dc * cell_length) + SQR(dr * cell_length));
+					activity(r + dr, c + dc) += (population(r, c) / MAX_POPULATION + commercialJobs(r, c) / MAX_JOBS) / (1.0f + weights["activity"] * dist);
+				}
+			}
 		}
 	}
-}
-
-/**
- * 指定されたセルのアクティビティを計算する
- */
-float Zoning::computeActivity(int x, int y) {
-	return 0;
 }
 
 /**
  * 汚染度を計算する
  */
 void Zoning::computePollution() {
-	for (int r = 0; r < grid_size; ++r) {
-		for (int c = 0; c < grid_size; ++c) {
-			pollution(r, c) = computePollution(c, r);
-		}
-	}
-}
+	pollution = Mat_<float>::zeros(grid_size, grid_size);
 
-/**
- * 指定されたセルの汚染度を計算する
- */
-float Zoning::computePollution(int x, int y) {
 	// 汚染が広がる最大距離
 	const float dist_max = 1000.0f;
 
-	float pol = 0.0f;
-
 	int window_size = dist_max / cell_length + 0.5f;
-	for (int dx = -window_size; dx <= window_size; ++dx) {
-		if (x + dx < 0 || x + dx >= grid_size) continue;
 
-		for (int dy = -window_size; dy <= window_size; ++dy) {
-			if (y + dy < 0 || y + dy >= grid_size) continue;
-			if (zones(y + dy, x + dx) != TYPE_INDUSTRIAL) continue;
+	for (int r = 0; r < grid_size; ++r) {
+		for (int c = 0; c < grid_size; ++c) {
+			if (zones(r, c) != TYPE_INDUSTRIAL) continue;
 
-			float dist = sqrt(SQR(dx * cell_length) + SQR(dy * cell_length));
-			pol += 1.0f / (1.0f + weights["pollution"] * dist);
+			// 当該工業ゾーンの周辺セルに、汚染度を追加する
+			for (int dr = -window_size; dr <= window_size; ++dr) {
+				if (r + dr < 0 || r + dr >= grid_size) continue;
+				for (int dc = -window_size; dc <= window_size; ++dc) {
+					if (c + dc < 0 || c + dc >= grid_size) continue;
+
+					float dist = sqrt(SQR(dc * cell_length) + SQR(dr * cell_length));
+					pollution(r + dr, c + dc) += 1.0f / (1.0f + weights["pollution"] * dist);
+				}
+			}
 		}
 	}
 
-	return min(pol, 1.0f);
+	// 最大値を1にする
+	for (int r = 0; r < grid_size; ++r) {
+		for (int c = 0; c < grid_size; ++c) {
+			pollution(r, c) = min(pollution(r, c), 1.0f);
+		}
+	}
 }
 
 QVector2D Zoning::gridToCity(const QVector2D& pt) {

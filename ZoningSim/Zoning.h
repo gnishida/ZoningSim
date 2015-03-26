@@ -11,6 +11,9 @@ class Zoning {
 public:
 	static enum { TYPE_RESIDENTIAL = 0, TYPE_COMMERCIAL = 1, TYPE_INDUSTRIAL = 2, TYPE_PARK = 3, TYPE_UNUSED = 9 };
 
+	static const int MAX_POPULATION;
+	static const int MAX_JOBS;
+
 	float city_length;		// cityの一辺の距離 [m]
 	float cell_length;	// セルの一辺の距離 [m]
 	int grid_size;		// グリッドの一辺のサイズ
@@ -29,15 +32,12 @@ public:
 	Mat_<float> industrialJobs;
 
 public:
-	Zoning(float city_length, int grid_size);
+	Zoning(float city_length, int grid_size, const QMap<QString, float>& weights);
 
 	void setRoads(RoadGraph& roads);
-	void setWeights(const QMap<QString, float>& weights);
 	void computeAccessibility();
 	void computeActivity();
-	float computeActivity(int x, int y);
 	void computePollution();
-	float computePollution(int x, int y);
 
 private:
 	QVector2D gridToCity(const QVector2D& pt);

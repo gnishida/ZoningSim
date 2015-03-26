@@ -23,4 +23,5 @@ void MainWindow::onLoadRoads() {
 	if (filename.isEmpty()) return;
 
 	glWidget->loadRoads(filename);
+	glWidget->updateGL();
 }
