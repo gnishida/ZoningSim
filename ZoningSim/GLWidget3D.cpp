@@ -10,13 +10,49 @@ GLWidget3D::GLWidget3D(MainWindow* mainWin) : QGLWidget(QGLFormat(QGL::SampleBuf
 
 	// 重みを適当にセットする
 	QMap<QString, float> weights;
-	weights["accessibility_highway"] = 0.01f;
-	weights["accessibility_avenue"] = 0.005f;
-	weights["accessibility_street"] = 0.001f;
-	weights["pollution"] = 0.1f;
-	weights["activity"] = 0.1f;
+	weights["highway_accessibility"] = 0.01f;
+	weights["avenue_accessibility"] = 0.005f;
+	weights["streeet_accessibility"] = 0.001f;
 
-	zoning = new Zoning(1000, 10, weights);
+	weights["distance_pollution"] = 0.1f;			// 工業ゾーンからの距離が、汚染度に与える影響
+	weights["distance_activity"] = 0.1f;			// 商業ゾーンからの距離が、アクティビティ度に与える影響
+
+	weights["accessibility_landvalue"] = 300.0f;	// アクセシビリティが、地価に与える影響度
+	weights["activity_landvalue"] = 500.0f;			// アクティビティが、地価に与える影響度
+	weights["pollution_landvalue"] = -350.0f;		// 汚染度が、地価に与える影響度
+	weights["slope_landvalue"] = -100.0f;			// 地面傾斜が、地価に与える影響度
+	weights["population_landvalue"] = 200.0f;		// 人口が、地価に与える影響度
+	weights["commercialjobs_landvalue"] = 200.0f;	// 商業の仕事量が、地価に与える影響度
+	weights["industrialjobs_landvalue"] = 200.0f;	// 工業の仕事量が、地価に与える影響度
+
+	weights["accessibility_life"] = 0.5f;			// アクセシビリティが、良い生活に与える影響度
+	weights["activity_life"] = 0.3f;				// アクティビティが、良い生活に与える影響度
+	weights["pollution_life"] = -1.0f;				// 汚染度が、良い生活に与える影響度
+	weights["slope_life"] = -0.1f;					// 地面傾斜が、良い生活に与える影響度
+	weights["landvalue_life"] = -0.1f;				// 地価が、良い生活に与える影響度
+	weights["population_life"] = 0.05f;				// 人口が、良い生活に与える影響度
+	weights["commercialjobs_life"] = 0.05f;			// 商業の仕事量が、良い生活に与える影響度
+	weights["industrialjobs_life"] = -0.1f;			// 工業の仕事量が、良い生活に与える影響度
+
+	weights["accessibility_shop"] = 1.0f;			// アクセシビリティが、店に与える影響度
+	weights["activity_shop"] = 0.3f;				// アクティビティが、店に与える影響度
+	weights["pollution_shop"] = -0.3f;				// 汚染度が、店に与える影響度
+	weights["slope_shop"] = 0.0f;					// 地面傾斜が、店に与える影響度
+	weights["landvalue_shop"] = 0.1f;				// 地価が、店に与える影響度
+	weights["population_shop"] = 0.2f;				// 人口が、店に与える影響度
+	weights["commercialjobs_shop"] = 0.2f;			// 商業の仕事量が、店に与える影響度
+	weights["industrialjobs_shop"] = 0.0f;			// 工業の仕事量が、店に与える影響度
+
+	weights["accessibility_factory"] = 0.5f;		// アクセシビリティが、工場に与える影響度
+	weights["activity_factory"] = 0.0f;				// アクティビティが、工場に与える影響度
+	weights["pollution_factory"] = 0.0f;			// 汚染度が、工場に与える影響度
+	weights["slope_factory"] = 0.0f;				// 地面傾斜が、工場に与える影響度
+	weights["landvalue_factory"] = -0.1f;			// 地価が、工場に与える影響度
+	weights["population_factory"] = -0.5f;			// 人口が、工場に与える影響度
+	weights["commercialjobs_factory"] = 0.0f;		// 商業の仕事量が、工場に与える影響度
+	weights["industrialjobs_factory"] = 0.3f;		// 工業の仕事量が、工場に与える影響度
+
+	zoning = new Zoning(500, 5, weights);
 	loadRoads("osm/lafayette.gsm");
 }
 
@@ -136,38 +172,83 @@ void GLWidget3D::drawScene() {
 			float x = c * zoning->cell_length - zoning->city_length * 0.5;
 			float y = r * zoning->cell_length - zoning->city_length * 0.5;
 
-			if (mainWin->controlWidget->ui.radioButtonZones->isChecked()) {
-				if (zoning->zones(r, c) == Zoning::TYPE_RESIDENTIAL) {
-					glColor4f(1.0f, 0.f, 0.0f, opacity);
-				} else if (zoning->zones(r, c) == Zoning::TYPE_COMMERCIAL) {
-					glColor4f(0.0f, 0.0f, 1.0f, opacity);
-				} else if (zoning->zones(r, c) == Zoning::TYPE_INDUSTRIAL) {
-					glColor4f(1.0f, 1.0f, 0.0f, opacity);
-				} else if (zoning->zones(r, c) == Zoning::TYPE_PARK) {
-					glColor4f(0.0f, 0.8f, 0.0f, opacity);
-				}
-			} else if (mainWin->controlWidget->ui.radioButtonAccessibility->isChecked()) {
-				glColor4f(1.0f, 1 - zoning->accessibility(r, c), 1 - zoning->accessibility(r, c), opacity);
-			} else if (mainWin->controlWidget->ui.radioButtonActivity->isChecked()) {
-				glColor4f(1.0f, 1 - zoning->activity(r, c), 1 - zoning->activity(r, c), opacity);
-			} else if (mainWin->controlWidget->ui.radioButtonPollution->isChecked()) {
-				glColor4f(1.0f, 1 - zoning->pollution(r, c), 1 - zoning->pollution(r, c), opacity);
-			} else if (mainWin->controlWidget->ui.radioButtonSlope->isChecked()) {
-				glColor4f(1.0f, 1 - zoning->slope(r, c), 1 - zoning->slope(r, c), opacity);
-			} else if (mainWin->controlWidget->ui.radioButtonLandValue->isChecked()) {
-				glColor4f(1.0f, 1 - zoning->landValue(r, c), 1 - zoning->landValue(r, c), opacity);
-			} else if (mainWin->controlWidget->ui.radioButtonPopulation->isChecked()) {
-				glColor4f(1.0f, 1 - zoning->population(r, c) / Zoning::MAX_POPULATION, 1 - zoning->population(r, c) / Zoning::MAX_POPULATION, opacity);
-			} else if (mainWin->controlWidget->ui.radioButtonCommercialJobs->isChecked()) {
-				glColor4f(1.0f, 1 - zoning->commercialJobs(r, c) / Zoning::MAX_JOBS, 1 - zoning->commercialJobs(r, c) / Zoning::MAX_JOBS, opacity);
-			} else if (mainWin->controlWidget->ui.radioButtonIndustrialJobs->isChecked()) {
-				glColor4f(1.0f, 1 - zoning->industrialJobs(r, c) / Zoning::MAX_JOBS, 1 - zoning->industrialJobs(r, c) / Zoning::MAX_JOBS, opacity);
-			}
+			if (mainWin->controlWidget->ui.radioButtonAll->isChecked()) {
+				float w = (zoning->cell_length - 10.0f) / 10.0f;
+				glColor4f(1, 0, 1, opacity);
+				glVertex3f(x + w * 0.1f, y, z);
+				glVertex3f(x + w * 0.9f, y, z);
+				glVertex3f(x + w * 0.9f, y + zoning->cell_length * 0.5f * zoning->accessibility(r, c), z);
+				glVertex3f(x + w * 0.1f, y + zoning->cell_length * 0.5f  * zoning->accessibility(r, c), z);
+				glColor4f(0, 1, 1, opacity);
+				glVertex3f(x + w * 1.1f, y, z);
+				glVertex3f(x + w * 1.9f, y, z);
+				glVertex3f(x + w * 1.9f, y + zoning->cell_length * 0.5f  * zoning->activity(r, c), z);
+				glVertex3f(x + w * 1.1f, y + zoning->cell_length * 0.5f  * zoning->activity(r, c), z);
+				glColor4f(0.5, 0.5, 0.5, opacity);
+				glVertex3f(x + w * 2.1f, y, z);
+				glVertex3f(x + w * 2.9f, y, z);
+				glVertex3f(x + w * 2.9f, y + zoning->cell_length * 0.5f  * zoning->pollution(r, c), z);
+				glVertex3f(x + w * 2.1f, y + zoning->cell_length * 0.5f  * zoning->pollution(r, c), z);
+				glColor4f(0, 0.5, 0, opacity);
+				glVertex3f(x + w * 3.1f, y, z);
+				glVertex3f(x + w * 3.9f, y, z);
+				glVertex3f(x + w * 3.9f, y + zoning->cell_length * 0.5f  * zoning->slope(r, c), z);
+				glVertex3f(x + w * 3.1f, y + zoning->cell_length * 0.5f  * zoning->slope(r, c), z);
+				glColor4f(1, 0.5, 0, opacity);
+				glVertex3f(x + w * 4.1f, y, z);
+				glVertex3f(x + w * 4.9f, y, z);
+				glVertex3f(x + w * 4.9f, y + zoning->cell_length * 0.5f  * zoning->landValue(r, c) / Zoning::MAX_LANDVALUE, z);
+				glVertex3f(x + w * 4.1f, y + zoning->cell_length * 0.5f  * zoning->landValue(r, c) / Zoning::MAX_LANDVALUE, z);
+				glColor4f(1, 0, 0, opacity);
+				glVertex3f(x + w * 5.1f, y, z);
+				glVertex3f(x + w * 5.9f, y, z);
+				glVertex3f(x + w * 5.9f, y + zoning->cell_length * 0.5f  * zoning->population(r, c) / Zoning::MAX_POPULATION, z);
+				glVertex3f(x + w * 5.1f, y + zoning->cell_length * 0.5f  * zoning->population(r, c) / Zoning::MAX_POPULATION, z);
+				glColor4f(0, 0, 1, opacity);
+				glVertex3f(x + w * 6.1f, y, z);
+				glVertex3f(x + w * 6.9f, y, z);
+				glVertex3f(x + w * 6.9f, y + zoning->cell_length * 0.5f  * zoning->commercialJobs(r, c) / Zoning::MAX_JOBS, z);
+				glVertex3f(x + w * 6.1f, y + zoning->cell_length * 0.5f  * zoning->commercialJobs(r, c) / Zoning::MAX_JOBS, z);
+				glColor4f(1, 1, 0, opacity);
+				glVertex3f(x + w * 7.1f, y, z);
+				glVertex3f(x + w * 7.9f, y, z);
+				glVertex3f(x + w * 7.9f, y + zoning->cell_length * 0.5f  * zoning->industrialJobs(r, c) / Zoning::MAX_JOBS, z);
+				glVertex3f(x + w * 7.1f, y + zoning->cell_length * 0.5f  * zoning->industrialJobs(r, c) / Zoning::MAX_JOBS, z);
 
-			glVertex3f(x, y, z);
-			glVertex3f(x + zoning->cell_length, y, z);
-			glVertex3f(x + zoning->cell_length, y + zoning->cell_length, z);
-			glVertex3f(x, y + zoning->cell_length, z);
+			} else {
+				if (mainWin->controlWidget->ui.radioButtonZones->isChecked()) {
+					if (zoning->zones(r, c) == Zoning::TYPE_RESIDENTIAL) {
+						glColor4f(1.0f, 0.f, 0.0f, opacity);
+					} else if (zoning->zones(r, c) == Zoning::TYPE_COMMERCIAL) {
+						glColor4f(0.0f, 0.0f, 1.0f, opacity);
+					} else if (zoning->zones(r, c) == Zoning::TYPE_INDUSTRIAL) {
+						glColor4f(1.0f, 1.0f, 0.0f, opacity);
+					} else if (zoning->zones(r, c) == Zoning::TYPE_PARK) {
+						glColor4f(0.0f, 0.8f, 0.0f, opacity);
+					}
+				} else if (mainWin->controlWidget->ui.radioButtonAccessibility->isChecked()) {
+					glColor4f(1.0f, 1 - zoning->accessibility(r, c), 1 - zoning->accessibility(r, c), opacity);
+				} else if (mainWin->controlWidget->ui.radioButtonActivity->isChecked()) {
+					glColor4f(1.0f, 1 - zoning->activity(r, c), 1 - zoning->activity(r, c), opacity);
+				} else if (mainWin->controlWidget->ui.radioButtonPollution->isChecked()) {
+					glColor4f(1.0f, 1 - zoning->pollution(r, c), 1 - zoning->pollution(r, c), opacity);
+				} else if (mainWin->controlWidget->ui.radioButtonSlope->isChecked()) {
+					glColor4f(1.0f, 1 - zoning->slope(r, c), 1 - zoning->slope(r, c), opacity);
+				} else if (mainWin->controlWidget->ui.radioButtonLandValue->isChecked()) {
+					glColor4f(1.0f, 1 - zoning->landValue(r, c) / Zoning::MAX_LANDVALUE, 1 - zoning->landValue(r, c) / Zoning::MAX_LANDVALUE, opacity);
+				} else if (mainWin->controlWidget->ui.radioButtonPopulation->isChecked()) {
+					glColor4f(1.0f, 1 - zoning->population(r, c) / Zoning::MAX_POPULATION, 1 - zoning->population(r, c) / Zoning::MAX_POPULATION, opacity);
+				} else if (mainWin->controlWidget->ui.radioButtonCommercialJobs->isChecked()) {
+					glColor4f(1.0f, 1 - zoning->commercialJobs(r, c) / Zoning::MAX_JOBS, 1 - zoning->commercialJobs(r, c) / Zoning::MAX_JOBS, opacity);
+				} else if (mainWin->controlWidget->ui.radioButtonIndustrialJobs->isChecked()) {
+					glColor4f(1.0f, 1 - zoning->industrialJobs(r, c) / Zoning::MAX_JOBS, 1 - zoning->industrialJobs(r, c) / Zoning::MAX_JOBS, opacity);
+				}
+
+				glVertex3f(x, y, z);
+				glVertex3f(x + zoning->cell_length, y, z);
+				glVertex3f(x + zoning->cell_length, y + zoning->cell_length, z);
+				glVertex3f(x, y + zoning->cell_length, z);
+			}
 		}
 	}
 	glEnd();

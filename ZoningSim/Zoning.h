@@ -11,6 +11,7 @@ class Zoning {
 public:
 	static enum { TYPE_RESIDENTIAL = 0, TYPE_COMMERCIAL = 1, TYPE_INDUSTRIAL = 2, TYPE_PARK = 3, TYPE_UNUSED = 9 };
 
+	static const float MAX_LANDVALUE;
 	static const int MAX_POPULATION;
 	static const int MAX_JOBS;
 
@@ -35,11 +36,22 @@ public:
 	Zoning(float city_length, int grid_size, const QMap<QString, float>& weights);
 
 	void setRoads(RoadGraph& roads);
+	void nextStep();
+
+private:
 	void computeAccessibility();
 	void computeActivity();
 	void computePollution();
+	void updateLandValue();
+	void updatePeopleAndJobs();
+	void removePeople(int num);
+	void addPeople(int num);
+	void removeCommercialJobs(int num);
+	void addCommercialJobs(int num);
+	void removeIndustrialJobs(int num);
+	void addIndustrialJobs(int num);
+	void updateZones();
 
-private:
 	QVector2D gridToCity(const QVector2D& pt);
 	QVector2D cityToGrid(const QVector2D& pt);
 };

@@ -2,6 +2,7 @@
 #include "Util.h"
 #include "GraphUtil.h"
 
+const float Zoning::MAX_LANDVALUE = 1000.0f;
 const int Zoning::MAX_POPULATION = 500;
 const int Zoning::MAX_JOBS = 500;
 
@@ -32,11 +33,11 @@ Zoning::Zoning(float city_length, int grid_size, const QMap<QString, float>& wei
 	for (int r = 0; r < grid_size; ++r) {
 		for (int c = 0; c < grid_size; ++c) {
 			if (zones(r, c) == TYPE_RESIDENTIAL) {
-				population(r, c) = Util::genRand(10, 100);
+				population(r, c) = Util::genRand(50, 150);
 			} else if (zones(r, c) == TYPE_COMMERCIAL) {
-				commercialJobs(r, c) = Util::genRand(10, 100);
+				commercialJobs(r, c) = Util::genRand(50, 150);
 			} else if (zones(r, c) == TYPE_INDUSTRIAL) {
-				industrialJobs(r, c) = Util::genRand(10, 100);
+				industrialJobs(r, c) = Util::genRand(50, 150);
 			}
 		}
 	}
@@ -45,10 +46,24 @@ Zoning::Zoning(float city_length, int grid_size, const QMap<QString, float>& wei
 	computePollution();
 }
 
+/**
+ * 道路をセットする。
+ */
 void Zoning::setRoads(RoadGraph& roads) {
 	this->roads = roads;
 
 	computeAccessibility();
+}
+
+/**
+ * シミュレーションを１ステップ進める。
+ */
+void Zoning::nextStep() {
+	updateLandValue();
+
+	updatePeopleAndJobs();
+
+	updateZones();
 }
 
 /**
@@ -93,7 +108,7 @@ void Zoning::computeAccessibility() {
 
 	for (int r = 0; r < grid_size; ++r) {
 		for (int c = 0; c < grid_size; ++c) {
-			accessibility(r, c) = weights["accessibility_highway"] * road_length[0](r, c) + weights["accessibility_avenue"] * road_length[1](r, c) + weights["accessibility_street"] * road_length[2](r, c);
+			accessibility(r, c) = min(weights["highway_accessibility"] * road_length[0](r, c) + weights["avenue_accessibility"] * road_length[1](r, c) + weights["streeet_accessibility"] * road_length[2](r, c), 1.0f);
 		}
 	}
 }
@@ -111,8 +126,6 @@ void Zoning::computeActivity() {
 
 	for (int r = 0; r < grid_size; ++r) {
 		for (int c = 0; c < grid_size; ++c) {
-			if (zones(r, c) != TYPE_RESIDENTIAL && zones(r, c) != TYPE_COMMERCIAL) continue;
-
 			// 当該セルの周辺セルに、アクティビティを追加する
 			for (int dr = -window_size; dr <= window_size; ++dr) {
 				if (r + dr < 0 || r + dr >= grid_size) continue;
@@ -120,7 +133,7 @@ void Zoning::computeActivity() {
 					if (c + dc < 0 || c + dc >= grid_size) continue;
 
 					float dist = sqrt(SQR(dc * cell_length) + SQR(dr * cell_length));
-					activity(r + dr, c + dc) += (population(r, c) / MAX_POPULATION + commercialJobs(r, c) / MAX_JOBS) / (1.0f + weights["activity"] * dist);
+					activity(r + dr, c + dc) += commercialJobs(r, c) / MAX_JOBS / (1.0f + weights["distance_activity"] * dist);
 				}
 			}
 		}
@@ -149,7 +162,7 @@ void Zoning::computePollution() {
 					if (c + dc < 0 || c + dc >= grid_size) continue;
 
 					float dist = sqrt(SQR(dc * cell_length) + SQR(dr * cell_length));
-					pollution(r + dr, c + dc) += 1.0f / (1.0f + weights["pollution"] * dist);
+					pollution(r + dr, c + dc) += 1.0f / (1.0f + weights["distance_pollution"] * dist);
 				}
 			}
 		}
@@ -159,6 +172,244 @@ void Zoning::computePollution() {
 	for (int r = 0; r < grid_size; ++r) {
 		for (int c = 0; c < grid_size; ++c) {
 			pollution(r, c) = min(pollution(r, c), 1.0f);
+		}
+	}
+}
+
+/**
+ * 地価を更新する。
+ */
+void Zoning::updateLandValue() {
+	for (int r = 0; r < grid_size; ++r) {
+		for (int c = 0; c < grid_size; ++c) {
+			float expected_landValue = weights["accessibility_landvalue"] * accessibility(r, c)
+				+ weights["activity_landvalue"] * activity(r, c)
+				+ weights["pollution_landvalue"] * pollution(r, c)
+				+ weights["slope_landvalue"] * slope(r, c)
+				+ weights["population_landvalue"] * population(r, c) / MAX_POPULATION
+				+ weights["commercialjobs_landvalue"] * commercialJobs(r, c) / MAX_JOBS
+				+ weights["industrialjobs_landvalue"] * industrialJobs(r, c) / MAX_JOBS;
+			if (expected_landValue < 0) expected_landValue = 0.0f;
+			if (expected_landValue > MAX_LANDVALUE) expected_landValue = MAX_LANDVALUE;
+
+			landValue(r, c) += (expected_landValue - landValue(r, c)) * 0.1f;
+		}
+	}
+
+	cout << landValue << endl;
+}
+
+/**
+ * 人口と仕事を更新する。
+ */
+void Zoning::updatePeopleAndJobs() {
+	// 全人口を計算する
+	Mat_<float> sum_population;
+	reduce(population, sum_population, 0, CV_REDUCE_SUM);
+	reduce(sum_population, sum_population, 1, CV_REDUCE_SUM);
+	float total_population = sum_population(0, 0);
+
+	// 全仕事量を計算する
+	Mat_<float> sum_commercialJobs;
+	reduce(commercialJobs, sum_commercialJobs, 0, CV_REDUCE_SUM);
+	reduce(sum_commercialJobs, sum_commercialJobs, 1, CV_REDUCE_SUM);
+	float total_commercialJobs = sum_commercialJobs(0, 0);
+
+	// 全仕事量を計算する
+	Mat_<float> sum_industrialJobs;
+	reduce(industrialJobs, sum_industrialJobs, 0, CV_REDUCE_SUM);
+	reduce(sum_industrialJobs, sum_industrialJobs, 1, CV_REDUCE_SUM);
+	float total_industrialJobs = sum_industrialJobs(0, 0);
+
+	// 人口増加数を計算
+	float d_population = (total_commercialJobs + total_industrialJobs - total_population) * 0.1;
+
+	// 仕事増加数を計算
+	float d_commercialJobs = -total_commercialJobs / (total_commercialJobs + total_industrialJobs) * d_population;
+	float d_industrialJobs = -total_industrialJobs / (total_commercialJobs + total_industrialJobs) * d_population;
+
+	// 人口を移動する
+	if (d_population >= 0) {
+		removePeople(total_population * 0.1);
+		addPeople(total_population * 0.1 + d_population);
+	} else {
+		removePeople(total_population * 0.1 - d_population);
+		addPeople(total_population * 0.1);
+	}
+
+	// 仕事を移動する
+	if (d_commercialJobs >= 0) {
+		removeCommercialJobs(total_commercialJobs * 0.1);
+		addCommercialJobs(total_commercialJobs * 0.1 + d_commercialJobs);
+	} else {
+		removeCommercialJobs(total_commercialJobs * 0.1 - d_commercialJobs);
+		addCommercialJobs(total_commercialJobs * 0.1);
+	}
+
+	// 仕事を移動する
+	if (d_industrialJobs >= 0) {
+		removeCommercialJobs(total_industrialJobs * 0.1);
+		addCommercialJobs(total_industrialJobs * 0.1 + d_industrialJobs);
+	} else {
+		removeCommercialJobs(total_industrialJobs * 0.1 - d_industrialJobs);
+		addCommercialJobs(total_industrialJobs * 0.1);
+	}
+}
+
+/** 
+ * 指定された人数を減らす。ランダムにセルを選択し、一人減らす。これを人数分繰り返す。
+ */
+void Zoning::removePeople(int num) {
+	while (num > 0) {
+		int r = Util::genRand(0, grid_size);
+		int c = Util::genRand(0, grid_size);
+
+		if (population(r, c) > 0) {
+			population(r, c)--;
+			num--;
+		}
+	}
+}
+
+/** 
+ * 指定された人数を増やす。ランダムにセルを選択し、一人増やす。これを人数分繰り返す。
+ */
+void Zoning::addPeople(int num) {
+	const int T = 10;
+
+	while (num > 0) {
+		vector<QVector2D> cells(T);
+		vector<float> pdf(T);
+
+		for (int i = 0; i < T; ++i) {
+			int r = Util::genRand(0, grid_size);
+			int c = Util::genRand(0, grid_size);
+			cells.push_back(QVector2D(c, r));
+
+			float quality = weights["accessibility_life"] * accessibility(r, c)
+				+ weights["activity_life"] * activity(r, c)
+				+ weights["pollution_life"] * pollution(r, c)
+				+ weights["slope_life"] * slope(r, c)
+				+ weights["landvalue_life"] * landValue(r, c)
+				+ weights["population_life"] * population(r, c)
+				+ weights["commercialjobs_life"] * commercialJobs(r, c)
+				+ weights["industrialjobs_life"] * industrialJobs(r, c);
+			pdf.push_back(exp(quality));
+		}
+
+		int id = Util::sampleFromPdf(pdf);
+		population(cells[id].y(), cells[id].x())++;
+		num--;
+	}
+}
+
+/** 
+ * 指定された商業仕事を減らす。ランダムにセルを選択し、一人減らす。これを指定された数だけ繰り返す。
+ */
+void Zoning::removeCommercialJobs(int num) {
+	while (num > 0) {
+		int r = Util::genRand(0, grid_size);
+		int c = Util::genRand(0, grid_size);
+
+		if (commercialJobs(r, c) > 0) {
+			commercialJobs(r, c)--;
+			num--;
+		}
+	}
+}
+
+/** 
+ * 指定された商業仕事を増やす。ランダムにセルを選択し、一人増やす。これを指定された数だけ繰り返す。
+ */
+void Zoning::addCommercialJobs(int num) {
+	const int T = 10;
+
+	while (num > 0) {
+		vector<QVector2D> cells(T);
+		vector<float> pdf(T);
+
+		for (int i = 0; i < T; ++i) {
+			int r = Util::genRand(0, grid_size);
+			int c = Util::genRand(0, grid_size);
+			cells.push_back(QVector2D(c, r));
+
+			float quality = weights["accessibility_shop"] * accessibility(r, c)
+				+ weights["activity_shop"] * activity(r, c)
+				+ weights["pollution_shop"] * pollution(r, c)
+				+ weights["slope_shop"] * slope(r, c)
+				+ weights["landvalue_shop"] * landValue(r, c)
+				+ weights["population_shop"] * population(r, c)
+				+ weights["commercialjobs_shop"] * commercialJobs(r, c)
+				+ weights["industrialjobs_shop"] * industrialJobs(r, c);
+			pdf.push_back(exp(quality));
+		}
+
+		int id = Util::sampleFromPdf(pdf);
+		population(cells[id].y(), cells[id].x())++;
+		num--;
+	}
+}
+
+/** 
+ * 指定された工業仕事を減らす。ランダムにセルを選択し、一人減らす。これを指定された数だけ繰り返す。
+ */
+void Zoning::removeIndustrialJobs(int num) {
+	while (num > 0) {
+		int r = Util::genRand(0, grid_size);
+		int c = Util::genRand(0, grid_size);
+
+		if (industrialJobs(r, c) > 0) {
+			industrialJobs(r, c)--;
+			num--;
+		}
+	}
+}
+
+/** 
+ * 指定された工業仕事を増やす。ランダムにセルを選択し、一人増やす。これを指定された数だけ繰り返す。
+ */
+void Zoning::addIndustrialJobs(int num) {
+	const int T = 10;
+
+	while (num > 0) {
+		vector<QVector2D> cells(T);
+		vector<float> pdf(T);
+
+		for (int i = 0; i < T; ++i) {
+			int r = Util::genRand(0, grid_size);
+			int c = Util::genRand(0, grid_size);
+			cells.push_back(QVector2D(c, r));
+
+			float quality = weights["accessibility_factory"] * accessibility(r, c)
+				+ weights["activity_factory"] * activity(r, c)
+				+ weights["pollution_factory"] * pollution(r, c)
+				+ weights["slope_factory"] * slope(r, c)
+				+ weights["landvalue_factory"] * landValue(r, c)
+				+ weights["population_factory"] * population(r, c)
+				+ weights["commercialjobs_factory"] * commercialJobs(r, c)
+				+ weights["industrialjobs_factory"] * industrialJobs(r, c);
+			pdf.push_back(exp(quality));
+		}
+
+		int id = Util::sampleFromPdf(pdf);
+		population(cells[id].y(), cells[id].x())++;
+		num--;
+	}
+}
+
+/**
+ * ゾーンを更新する。
+ */
+void Zoning::updateZones() {
+	for (int r = 0; r < grid_size; ++r) {
+		for (int c = 0; c < grid_size; ++c) {
+			if (population(r, c) / MAX_POPULATION > commercialJobs(r, c) / MAX_JOBS && population(r, c) / MAX_POPULATION > industrialJobs(r, c) / MAX_JOBS) {
+				zones(r, c) = TYPE_RESIDENTIAL;
+			} else if (commercialJobs(r, c) / MAX_JOBS > industrialJobs(r, c) / MAX_JOBS) {
+				zones(r, c) = TYPE_COMMERCIAL;
+			} else {
+				zones(r, c) = TYPE_INDUSTRIAL;
+			}
 		}
 	}
 }

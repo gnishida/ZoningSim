@@ -19,5 +19,6 @@ public:
 public slots:
 	void onViewChanged();
 	void onOpacityChanged(int);
+	void onNextStep();
 };
 

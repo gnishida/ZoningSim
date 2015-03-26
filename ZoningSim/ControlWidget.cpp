@@ -21,8 +21,11 @@ ControlWidget::ControlWidget(MainWindow* mainWin) : QDockWidget("Control Widget"
 	connect(ui.radioButtonPopulation, SIGNAL(clicked()), this, SLOT(onViewChanged()));
 	connect(ui.radioButtonCommercialJobs, SIGNAL(clicked()), this, SLOT(onViewChanged()));
 	connect(ui.radioButtonIndustrialJobs, SIGNAL(clicked()), this, SLOT(onViewChanged()));
+	connect(ui.radioButtonAll, SIGNAL(clicked()), this, SLOT(onViewChanged()));
 
 	connect(ui.horizontalSliderOpacity, SIGNAL(valueChanged(int)), this, SLOT(onOpacityChanged(int)));
+
+	connect(ui.pushButtonNextStep, SIGNAL(clicked()), this, SLOT(onNextStep()));
 
 	ui.radioButtonZones->setChecked(true);
 
@@ -34,5 +37,10 @@ void ControlWidget::onViewChanged() {
 }
 
 void ControlWidget::onOpacityChanged(int value) {
+	mainWin->glWidget->updateGL();
+}
+
+void ControlWidget::onNextStep() {
+	mainWin->glWidget->zoning->nextStep();
 	mainWin->glWidget->updateGL();
 }
