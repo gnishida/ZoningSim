@@ -14,8 +14,10 @@ GLWidget3D::GLWidget3D(MainWindow* mainWin) : QGLWidget(QGLFormat(QGL::SampleBuf
 	weights["avenue_accessibility"] = 0.005f;
 	weights["streeet_accessibility"] = 0.001f;
 
-	weights["distance_pollution"] = 0.1f;			// 工業ゾーンからの距離が、汚染度に与える影響
-	weights["distance_activity"] = 0.1f;			// 商業ゾーンからの距離が、アクティビティ度に与える影響
+	weights["industrial_pollution"] = 0.3f;			// 工場が、汚染度に与える影響
+	weights["distance_pollution"] = 0.01f;			// 工場からの距離が、汚染度に与える影響
+	weights["commercial_activity"] = 0.5f;			// 店がアクティビティ度に与える影響
+	weights["distance_activity"] = 0.1f;			// 店からの距離が、アクティビティ度に与える影響
 
 	weights["accessibility_landvalue"] = 300.0f;	// アクセシビリティが、地価に与える影響度
 	weights["activity_landvalue"] = 500.0f;			// アクティビティが、地価に与える影響度
@@ -35,7 +37,7 @@ GLWidget3D::GLWidget3D(MainWindow* mainWin) : QGLWidget(QGLFormat(QGL::SampleBuf
 	weights["industrialjobs_life"] = -0.1f;			// 工業の仕事量が、良い生活に与える影響度
 
 	weights["accessibility_shop"] = 1.0f;			// アクセシビリティが、店に与える影響度
-	weights["activity_shop"] = 0.3f;				// アクティビティが、店に与える影響度
+	weights["activity_shop"] = 0.5f;				// アクティビティが、店に与える影響度
 	weights["pollution_shop"] = -0.3f;				// 汚染度が、店に与える影響度
 	weights["slope_shop"] = 0.0f;					// 地面傾斜が、店に与える影響度
 	weights["landvalue_shop"] = 0.1f;				// 地価が、店に与える影響度
@@ -43,16 +45,16 @@ GLWidget3D::GLWidget3D(MainWindow* mainWin) : QGLWidget(QGLFormat(QGL::SampleBuf
 	weights["commercialjobs_shop"] = 0.2f;			// 商業の仕事量が、店に与える影響度
 	weights["industrialjobs_shop"] = 0.0f;			// 工業の仕事量が、店に与える影響度
 
-	weights["accessibility_factory"] = 0.5f;		// アクセシビリティが、工場に与える影響度
-	weights["activity_factory"] = 0.0f;				// アクティビティが、工場に与える影響度
-	weights["pollution_factory"] = 0.0f;			// 汚染度が、工場に与える影響度
+	weights["accessibility_factory"] = 0.0f;		// アクセシビリティが、工場に与える影響度
+	weights["activity_factory"] = -0.3f;			// アクティビティが、工場に与える影響度
+	weights["pollution_factory"] = 0.3f;			// 汚染度が、工場に与える影響度
 	weights["slope_factory"] = 0.0f;				// 地面傾斜が、工場に与える影響度
 	weights["landvalue_factory"] = -0.1f;			// 地価が、工場に与える影響度
 	weights["population_factory"] = -0.5f;			// 人口が、工場に与える影響度
 	weights["commercialjobs_factory"] = 0.0f;		// 商業の仕事量が、工場に与える影響度
 	weights["industrialjobs_factory"] = 0.3f;		// 工業の仕事量が、工場に与える影響度
 
-	zoning = new Zoning(500, 5, weights);
+	zoning = new Zoning(2000, 20, weights);
 	loadRoads("osm/lafayette.gsm");
 }
 
