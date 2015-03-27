@@ -40,7 +40,7 @@ public:
 	Zoning(float city_length, int grid_size, const QMap<QString, float>& weights);
 
 	void setRoads(RoadGraph& roads);
-	void nextStep();
+	void nextSteps(int numSteps);
 
 private:
 	void computeAccessibility();

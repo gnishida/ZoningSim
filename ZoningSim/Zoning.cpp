@@ -72,19 +72,21 @@ void Zoning::setRoads(RoadGraph& roads) {
 /**
  * シミュレーションを１ステップ進める。
  */
-void Zoning::nextStep() {
-	updateLandValue();
+void Zoning::nextSteps(int numSteps) {
+	for (int iter = 0; iter < numSteps; ++iter) {
+		updateLandValue();
 
-	computeLife();
-	computeShop();
-	computeFactory();
+		computeLife();
+		computeShop();
+		computeFactory();
 
-	updatePeopleAndJobs();
+		updatePeopleAndJobs();
 
-	updateZones();
+		updateZones();
 
-	computeActivity();
-	computePollution();
+		computeActivity();
+		computePollution();
+	}
 }
 
 /**
@@ -100,12 +102,14 @@ void Zoning::computeAccessibility() {
 	RoadEdgeIter ei, eend;
 	for (boost::tie(ei, eend) = boost::edges(roads.graph); ei != eend; ++ei) {
 		Polyline2D polyline = GraphUtil::finerEdge(roads, *ei, 10.0f);
+		float oneWay = roads.graph[*ei]->oneWay ? 0.5f : 1.0f;
 		for (int i = 0; i < polyline.size() - 1; ++i) {
 			QVector2D pt = cityToGrid(polyline[i]);
 			if (pt.x() < 0 || pt.x() >= grid_size) continue;
 			if (pt.y() < 0 || pt.y() >= grid_size) continue;
 
-			float len = (polyline[i + 1] - polyline[i]).length();
+			// 道路セグメントの長さ（一方通行の場合は、半分にする）
+			float len = (polyline[i + 1] - polyline[i]).length() * oneWay;
 
 			// このセルを中心に、5x5セルの範囲で、道路長を追加していく
 			for (int dx = -2; dx <= 2; ++dx) {
