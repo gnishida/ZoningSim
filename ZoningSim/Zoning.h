@@ -15,7 +15,7 @@ public:
 	static const int MAX_POPULATION;
 	static const int MAX_JOBS;
 
-	float city_length;		// cityの一辺の距離 [m]
+	float city_length;	// cityの一辺の距離 [m]
 	float cell_length;	// セルの一辺の距離 [m]
 	int grid_size;		// グリッドの一辺のサイズ
 	RoadGraph roads;
@@ -31,6 +31,10 @@ public:
 	Mat_<float> population;
 	Mat_<float> commercialJobs;
 	Mat_<float> industrialJobs;
+
+	Mat_<float> life;		// 生活の快適さ
+	Mat_<float> shop;		// 店をオープンするための指標
+	Mat_<float> factory;	// 工場をオープンするための指標
 
 public:
 	Zoning(float city_length, int grid_size, const QMap<QString, float>& weights);
@@ -50,6 +54,9 @@ private:
 	void addCommercialJobs(int num);
 	void removeIndustrialJobs(int num);
 	void addIndustrialJobs(int num);
+	void computeLife();
+	void computeShop();
+	void computeFactory();
 	float lifeValue(int x, int y);
 	float shopValue(int x, int y);
 	float factoryValue(int x, int y);
@@ -57,5 +64,7 @@ private:
 
 	QVector2D gridToCity(const QVector2D& pt);
 	QVector2D cityToGrid(const QVector2D& pt);
+	float sum(Mat_<float>& mat);
+	float max(Mat_<float>& mat);
 };
 

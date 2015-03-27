@@ -242,6 +242,12 @@ void GLWidget3D::drawScene() {
 					glColor4f(1.0f, 1 - zoning->commercialJobs(r, c) / Zoning::MAX_JOBS, 1 - zoning->commercialJobs(r, c) / Zoning::MAX_JOBS, opacity);
 				} else if (mainWin->controlWidget->ui.radioButtonIndustrialJobs->isChecked()) {
 					glColor4f(1.0f, 1 - zoning->industrialJobs(r, c) / Zoning::MAX_JOBS, 1 - zoning->industrialJobs(r, c) / Zoning::MAX_JOBS, opacity);
+				} else if (mainWin->controlWidget->ui.radioButtonLife->isChecked()) {
+					glColor4f(1.0f, 1 - zoning->life(r, c), 1 - zoning->life(r, c), opacity);
+				} else if (mainWin->controlWidget->ui.radioButtonShop->isChecked()) {
+					glColor4f(1.0f, 1 - zoning->shop(r, c), 1 - zoning->shop(r, c), opacity);
+				} else if (mainWin->controlWidget->ui.radioButtonFactory->isChecked()) {
+					glColor4f(1.0f, 1 - zoning->factory(r, c), 1 - zoning->factory(r, c), opacity);
 				}
 
 				glVertex3f(x, y, z);

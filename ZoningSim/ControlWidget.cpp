@@ -21,6 +21,9 @@ ControlWidget::ControlWidget(MainWindow* mainWin) : QDockWidget("Control Widget"
 	connect(ui.radioButtonPopulation, SIGNAL(clicked()), this, SLOT(onViewChanged()));
 	connect(ui.radioButtonCommercialJobs, SIGNAL(clicked()), this, SLOT(onViewChanged()));
 	connect(ui.radioButtonIndustrialJobs, SIGNAL(clicked()), this, SLOT(onViewChanged()));
+	connect(ui.radioButtonLife, SIGNAL(clicked()), this, SLOT(onViewChanged()));
+	connect(ui.radioButtonShop, SIGNAL(clicked()), this, SLOT(onViewChanged()));
+	connect(ui.radioButtonFactory, SIGNAL(clicked()), this, SLOT(onViewChanged()));
 	connect(ui.radioButtonAll, SIGNAL(clicked()), this, SLOT(onViewChanged()));
 
 	connect(ui.horizontalSliderOpacity, SIGNAL(valueChanged(int)), this, SLOT(onOpacityChanged(int)));
