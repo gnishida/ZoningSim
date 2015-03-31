@@ -9,7 +9,7 @@ using namespace cv;
 
 class Zoning {
 public:
-	static enum { TYPE_RESIDENTIAL = 0, TYPE_COMMERCIAL = 1, TYPE_INDUSTRIAL = 2, TYPE_PARK = 3, TYPE_UNUSED = 9 };
+	static enum { TYPE_RESIDENTIAL = 0, TYPE_COMMERCIAL = 1, TYPE_INDUSTRIAL = 2, TYPE_MIXED = 3, TYPE_PARK = 4, TYPE_UNUSED = 9 };
 
 	static const float MAX_LANDVALUE;
 	static const int MAX_POPULATION;
@@ -23,8 +23,11 @@ public:
 	QMap<QString, float> weights;
 
 	Mat_<uchar> zones;
+
+
 	Mat_<float> accessibility;
-	Mat_<float> activity;
+	Mat_<float> neighborPopulation;		// 周辺の人口
+	Mat_<float> neighborCommercial;		// 周辺の商業の量
 	Mat_<float> pollution;
 	Mat_<float> slope;
 	Mat_<float> landValue;
@@ -44,7 +47,11 @@ public:
 
 private:
 	void computeAccessibility();
-	void computeActivity();
+	//void computeActivity();
+	void computeNeighborPopulation();
+	void computeNeighborCommercial();
+
+
 	void computePollution();
 	void updateLandValue();
 	void updatePeopleAndJobs();
@@ -64,7 +71,7 @@ private:
 
 	QVector2D gridToCity(const QVector2D& pt);
 	QVector2D cityToGrid(const QVector2D& pt);
-	float sum(Mat_<float>& mat);
-	float max(Mat_<float>& mat);
+	float matsum(Mat_<float>& mat);
+	float matmax(Mat_<float>& mat);
 };
 

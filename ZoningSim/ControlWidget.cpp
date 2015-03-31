@@ -15,7 +15,8 @@ ControlWidget::ControlWidget(MainWindow* mainWin) : QDockWidget("Control Widget"
 	
 	connect(ui.radioButtonZones, SIGNAL(clicked()), this, SLOT(onViewChanged()));
 	connect(ui.radioButtonAccessibility, SIGNAL(clicked()), this, SLOT(onViewChanged()));
-	connect(ui.radioButtonActivity, SIGNAL(clicked()), this, SLOT(onViewChanged()));
+	connect(ui.radioButtonNeighborPopulation, SIGNAL(clicked()), this, SLOT(onViewChanged()));
+	connect(ui.radioButtonNeighborCommercial, SIGNAL(clicked()), this, SLOT(onViewChanged()));
 	connect(ui.radioButtonPollution, SIGNAL(clicked()), this, SLOT(onViewChanged()));
 	connect(ui.radioButtonSlope, SIGNAL(clicked()), this, SLOT(onViewChanged()));
 	connect(ui.radioButtonLandValue, SIGNAL(clicked()), this, SLOT(onViewChanged()));
