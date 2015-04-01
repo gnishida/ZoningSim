@@ -19,6 +19,7 @@ public:
 
 public slots:
 	void onLoadRoads();
+	void onParameters();
 };
 
 #endif // MAINWINDOW_H

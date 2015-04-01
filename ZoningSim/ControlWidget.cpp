@@ -46,6 +46,6 @@ void ControlWidget::onOpacityChanged(int value) {
 }
 
 void ControlWidget::onNextStep() {
-	mainWin->glWidget->zoning->nextSteps(ui.lineEditNumSteps->text().toInt());
+	mainWin->glWidget->zoning->nextSteps(ui.lineEditNumSteps->text().toInt(), ui.checkBoxSaveZonings->isChecked());
 	mainWin->glWidget->updateGL();
 }

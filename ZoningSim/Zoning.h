@@ -43,7 +43,7 @@ public:
 	Zoning(float city_length, int grid_size, const QMap<QString, float>& weights);
 
 	void setRoads(RoadGraph& roads);
-	void nextSteps(int numSteps);
+	void nextSteps(int numSteps, bool saveZonings);
 
 private:
 	void computeAccessibility();
@@ -54,7 +54,7 @@ private:
 
 	void computePollution();
 	void updateLandValue();
-	void updatePeopleAndJobs();
+	void updatePeopleAndJobs(float ratio);
 	void removePeople(int num);
 	void addPeople(int num);
 	void removeCommercialJobs(int num);
@@ -69,6 +69,7 @@ private:
 	float factoryValue(int x, int y);
 	void updateZones();
 
+	void saveZoneImage(const Mat_<uchar>& mat, char* filename);
 	QVector2D gridToCity(const QVector2D& pt);
 	QVector2D cityToGrid(const QVector2D& pt);
 	float matsum(Mat_<float>& mat);

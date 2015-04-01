@@ -1,6 +1,7 @@
 ﻿#include "Zoning.h"
 #include "Util.h"
 #include "GraphUtil.h"
+#include <QElapsedTimer>
 
 //#define DEBUG	0
 
@@ -56,8 +57,8 @@ Zoning::Zoning(float city_length, int grid_size, const QMap<QString, float>& wei
 			} else if (zones(r, c) == TYPE_INDUSTRIAL) {
 				industrialJobs(r, c) = (int)Util::genRand(50, 350);
 			} else if (zones(r, c) == TYPE_MIXED) {
+				population(r, c) = (int)(Util::genRand(50, 350) * 0.5);
 				commercialJobs(r, c) = (int)(Util::genRand(50, 350) * 0.5);
-				industrialJobs(r, c) = (int)(Util::genRand(50, 350) * 0.5);
 			}
 		}
 	}
@@ -87,7 +88,7 @@ void Zoning::setRoads(RoadGraph& roads) {
 /**
  * シミュレーションを１ステップ進める。
  */
-void Zoning::nextSteps(int numSteps) {
+void Zoning::nextSteps(int numSteps, bool saveZonings) {
 	for (int iter = 0; iter < numSteps; ++iter) {
 		updateLandValue();
 
@@ -95,13 +96,19 @@ void Zoning::nextSteps(int numSteps) {
 		computeShop();
 		computeFactory();
 
-		updatePeopleAndJobs();
+		updatePeopleAndJobs(0.5f);
 
 		updateZones();
 
 		computeNeighborPopulation();
 		computeNeighborCommercial();
 		computePollution();
+
+		if (saveZonings) {
+			char filename[256];
+			sprintf(filename, "zone_%d.png", iter);
+			saveZoneImage(zones, filename);
+		}
 	}
 
 	cout << "next steps done.\n" << endl;
@@ -152,7 +159,7 @@ void Zoning::computeAccessibility() {
 	float cell_length2 = cell_length * cell_length;
 	for (int r = 0; r < grid_size; ++r) {
 		for (int c = 0; c < grid_size; ++c) {
-			accessibility(r, c) = std::max(weights["highway_accessibility"] * road_length[0](r, c) / cell_length2, std::max(weights["avenue_accessibility"] * road_length[1](r, c) / cell_length2, weights["streeet_accessibility"] * road_length[2](r, c) / cell_length2));
+			accessibility(r, c) = std::max(weights["highway_accessibility"] * road_length[0](r, c) / cell_length2, std::max(weights["avenue_accessibility"] * road_length[1](r, c) / cell_length2, weights["street_accessibility"] * road_length[2](r, c) / cell_length2));
 			accessibility(r, c) = min(accessibility(r, c), 1.0f);
 			//accessibility(r, c) = min(weights["highway_accessibility"] * road_length[0](r, c) / cell_length2  + weights["avenue_accessibility"] * road_length[1](r, c) / cell_length2 + weights["streeet_accessibility"] * road_length[2](r, c) / cell_length2, 1.0f);
 		}
@@ -160,54 +167,16 @@ void Zoning::computeAccessibility() {
 }
 
 /**
- * アクティビティを計算する
- */
-/*
-void Zoning::computeActivity() {
-	activity = Mat_<float>::zeros(grid_size, grid_size);
-
-	// アクティビティが広がる最大距離
-	const float dist_max = 3000.0f;
-
-	int window_size = dist_max / cell_length + 0.5f;
-
-	for (int r = 0; r < grid_size; ++r) {
-		for (int c = 0; c < grid_size; ++c) {
-			// 当該セルの周辺セルに、アクティビティを追加する
-			for (int dr = -window_size; dr <= window_size; ++dr) {
-				if (r + dr < 0 || r + dr >= grid_size) continue;
-				for (int dc = -window_size; dc <= window_size; ++dc) {
-					if (c + dc < 0 || c + dc >= grid_size) continue;
-
-					float dist = sqrt(SQR(dc * cell_length) + SQR(dr * cell_length));
-					activity(r + dr, c + dc) += weights["commercial_activity"] * commercialJobs(r, c) / MAX_JOBS / expf(weights["distance_activity"] * dist);
-				}
-			}
-		}
-	}
-
-	// 最大値を1にする
-	for (int r = 0; r < grid_size; ++r) {
-		for (int c = 0; c < grid_size; ++c) {
-			activity(r, c) = min(activity(r, c), 1.0f);
-		}
-	}
-
-#ifdef DEBUG
-	cout << "Activity: " << endl;
-	cout << activity << endl;
-#endif
-}
-*/
-
-/**
  * 周辺の人口を計算する。
  */
 void Zoning::computeNeighborPopulation() {
+	QElapsedTimer timer;
+	timer.start();
+
 	neighborPopulation = Mat_<float>::zeros(grid_size, grid_size);
 
 	// アクティビティが広がる最大距離
-	const float dist_max = 3000.0f;
+	const float dist_max = 1000.0f;
 
 	int window_size = dist_max / cell_length + 0.5f;
 
@@ -233,6 +202,8 @@ void Zoning::computeNeighborPopulation() {
 		}
 	}
 
+	cout << "computeNeighborPopulation(): " << timer.elapsed() * 0.001 << " [sec]" << endl;
+
 #ifdef DEBUG
 	cout << "Neighbor population: " << endl;
 	cout << neighborPopulation << endl;
@@ -243,10 +214,13 @@ void Zoning::computeNeighborPopulation() {
  * 周辺の商業を計算する。
  */
 void Zoning::computeNeighborCommercial() {
+	QElapsedTimer timer;
+	timer.start();
+
 	neighborCommercial = Mat_<float>::zeros(grid_size, grid_size);
 
 	// アクティビティが広がる最大距離
-	const float dist_max = 3000.0f;
+	const float dist_max = 1000.0f;
 
 	int window_size = dist_max / cell_length + 0.5f;
 
@@ -272,6 +246,8 @@ void Zoning::computeNeighborCommercial() {
 		}
 	}
 
+	cout << "computeNeighborComercial(): " << timer.elapsed() * 0.001 << " [sec]" << endl;
+
 #ifdef DEBUG
 	cout << "Neighbor population: " << endl;
 	cout << neighborPopulation << endl;
@@ -282,6 +258,9 @@ void Zoning::computeNeighborCommercial() {
  * 汚染度を計算する
  */
 void Zoning::computePollution() {
+	QElapsedTimer timer;
+	timer.start();
+
 	pollution = Mat_<float>::zeros(grid_size, grid_size);
 
 	// 汚染が広がる最大距離
@@ -311,6 +290,8 @@ void Zoning::computePollution() {
 		}
 	}
 
+	cout << "computePollution(): " << timer.elapsed() * 0.001 << " [sec]" << endl;
+
 #ifdef DEBUG
 	cout << "Pollution: " << endl;
 	cout << pollution << endl;
@@ -321,6 +302,9 @@ void Zoning::computePollution() {
  * 地価を更新する。
  */
 void Zoning::updateLandValue() {
+	QElapsedTimer timer;
+	timer.start();
+
 	for (int r = 0; r < grid_size; ++r) {
 		for (int c = 0; c < grid_size; ++c) {
 			float expected_landValue = weights["accessibility_landvalue"] * accessibility(r, c)
@@ -339,6 +323,8 @@ void Zoning::updateLandValue() {
 		}
 	}
 
+	cout << "updateLandValue(): " << timer.elapsed() * 0.001 << " [sec]" << endl;
+
 #ifdef DEBUG
 	cout << "Land value:" << endl;
 	cout << landValue << endl;
@@ -347,8 +333,13 @@ void Zoning::updateLandValue() {
 
 /**
  * 人口と仕事を更新する。
+ *
+ * @param ratio		移動する比率
  */
-void Zoning::updatePeopleAndJobs() {
+void Zoning::updatePeopleAndJobs(float ratio) {
+	QElapsedTimer timer;
+	timer.start();
+
 	// 全人口を計算する
 	float total_population = matsum(population);
 
@@ -356,39 +347,19 @@ void Zoning::updatePeopleAndJobs() {
 	float total_commercialJobs = matsum(commercialJobs);
 	float total_industrialJobs = matsum(industrialJobs);
 
-	// 人口増加数を計算
-	float d_population = (total_commercialJobs + total_industrialJobs - total_population) * 0.1;
-
-	// 仕事増加数を計算
-	float d_commercialJobs = -total_commercialJobs / (total_commercialJobs + total_industrialJobs) * d_population;
-	float d_industrialJobs = -total_industrialJobs / (total_commercialJobs + total_industrialJobs) * d_population;
-
 	// 人口を移動する
-	if (d_population >= 0) {
-		removePeople(total_population * 0.1);
-		addPeople(total_population * 0.1 + d_population);
-	} else {
-		removePeople(total_population * 0.1 - d_population);
-		addPeople(total_population * 0.1);
-	}
+	removePeople(total_population * ratio);
+	addPeople(total_population * ratio);
 
 	// 仕事を移動する
-	if (d_commercialJobs >= 0) {
-		removeCommercialJobs(total_commercialJobs * 0.1);
-		addCommercialJobs(total_commercialJobs * 0.1 + d_commercialJobs);
-	} else {
-		removeCommercialJobs(total_commercialJobs * 0.1 - d_commercialJobs);
-		addCommercialJobs(total_commercialJobs * 0.1);
-	}
+	removeCommercialJobs(total_commercialJobs * ratio);
+	addCommercialJobs(total_commercialJobs * ratio);
 
 	// 仕事を移動する
-	if (d_industrialJobs >= 0) {
-		removeIndustrialJobs(total_industrialJobs * 0.1);
-		addIndustrialJobs(total_industrialJobs * 0.1 + d_industrialJobs);
-	} else {
-		removeIndustrialJobs(total_industrialJobs * 0.1 - d_industrialJobs);
-		addIndustrialJobs(total_industrialJobs * 0.1);
-	}
+	removeIndustrialJobs(total_industrialJobs * ratio);
+	addIndustrialJobs(total_industrialJobs * ratio);
+
+	cout << "updatePeopleAndJobs(): " << timer.elapsed() * 0.001 << " [sec]" << endl;
 
 #ifdef DEBUG
 	cout << "People: " << matsum(population) << endl;
@@ -427,7 +398,7 @@ void Zoning::addPeople(int num) {
 			while (true) {
 				r = Util::genRand(0, grid_size);
 				c = Util::genRand(0, grid_size);
-				if (population(r, c) < MAX_POPULATION) break;
+				if (population(r, c) / MAX_POPULATION + commercialJobs(r, c) / MAX_JOBS + industrialJobs(r, c) / MAX_JOBS < 1.0f) break;
 			}
 			cells[i] = QVector2D(c, r);
 			pdf[i] = life(c, r);
@@ -473,7 +444,7 @@ void Zoning::addCommercialJobs(int num) {
 			while (true) {
 				r = Util::genRand(0, grid_size);
 				c = Util::genRand(0, grid_size);
-				if (commercialJobs(r, c) < MAX_JOBS) break;
+				if (population(r, c) / MAX_POPULATION + commercialJobs(r, c) / MAX_JOBS + industrialJobs(r, c) / MAX_JOBS < 1.0f) break;
 			}
 			cells[i] = QVector2D(c, r);
 			pdf[i] = shop(c, r);
@@ -515,7 +486,7 @@ void Zoning::addIndustrialJobs(int num) {
 			while (true) {
 				r = Util::genRand(0, grid_size);
 				c = Util::genRand(0, grid_size);
-				if (industrialJobs(r, c) < MAX_JOBS) break;
+				if (population(r, c) / MAX_POPULATION + commercialJobs(r, c) / MAX_JOBS + industrialJobs(r, c) / MAX_JOBS < 1.0f) break;
 			}
 			cells[i] = QVector2D(c, r);
 			pdf[i] = factory(c, r);
@@ -531,6 +502,9 @@ void Zoning::addIndustrialJobs(int num) {
  * 生活の快適さの指標を計算する。
  */
 void Zoning::computeLife() {
+	QElapsedTimer timer;
+	timer.start();
+
 	life = Mat_<float>(grid_size, grid_size);
 
 	for (int r = 0; r < grid_size; ++r) {
@@ -542,6 +516,8 @@ void Zoning::computeLife() {
 	// 最大値でわってnormalizeする
 	life = life / matmax(life);
 
+	cout << "computeLife(): " << timer.elapsed() * 0.001 << " [sec]" << endl;
+
 #ifdef DEBUG
 	cout << "Life:" << endl;
 	cout << life << endl;
@@ -552,6 +528,9 @@ void Zoning::computeLife() {
  * 店をオープンする指標を計算する。
  */
 void Zoning::computeShop() {
+	QElapsedTimer timer;
+	timer.start();
+
 	shop = Mat_<float>(grid_size, grid_size);
 
 	for (int r = 0; r < grid_size; ++r) {
@@ -563,6 +542,8 @@ void Zoning::computeShop() {
 	// 最大値でわってnormalizeする
 	shop = shop / matmax(shop);
 
+	cout << "computeShop(): " << timer.elapsed() * 0.001 << " [sec]" << endl;
+
 #ifdef DEBUG
 	cout << endl << "Shop:" << endl;
 	cout << shop << endl;
@@ -573,6 +554,9 @@ void Zoning::computeShop() {
  * 工場をオープンする指標を計算する。
  */
 void Zoning::computeFactory() {
+	QElapsedTimer timer;
+	timer.start();
+
 	factory = Mat_<float>(grid_size, grid_size);
 
 	for (int r = 0; r < grid_size; ++r) {
@@ -584,6 +568,8 @@ void Zoning::computeFactory() {
 
 	// 最大値でわってnormalizeする
 	factory = factory / matmax(factory);
+
+	cout << "computeFactory()(): " << timer.elapsed() * 0.001 << " [sec]" << endl;
 
 #ifdef DEBUG
 	cout << endl << "Factory:" << endl;
@@ -665,17 +651,32 @@ void Zoning::updateZones() {
 	cout << industrialJobs << endl;
 #endif
 
+	QElapsedTimer timer;
+	timer.start();
+
 	for (int r = 0; r < grid_size; ++r) {
 		for (int c = 0; c < grid_size; ++c) {
-			if (population(r, c) / MAX_POPULATION > commercialJobs(r, c) / MAX_JOBS && population(r, c) / MAX_POPULATION > industrialJobs(r, c) / MAX_JOBS) {
+			if (industrialJobs(r, c) / MAX_JOBS > population(r, c) / MAX_POPULATION && industrialJobs(r, c) > commercialJobs(r, c)) {
+				zones(r, c) = TYPE_INDUSTRIAL;
+			} else if (population(r, c) / MAX_POPULATION < 0.1 && commercialJobs(r, c) / MAX_JOBS < 0.1 && industrialJobs(r, c) / MAX_JOBS < 0.1) {
+				zones(r, c) = TYPE_PARK;
+			} else if (population(r, c) / MAX_POPULATION > commercialJobs(r, c) / MAX_JOBS * 2) {
 				zones(r, c) = TYPE_RESIDENTIAL;
-			} else if (commercialJobs(r, c) / MAX_JOBS > industrialJobs(r, c) / MAX_JOBS) {
+			} else if (commercialJobs(r, c) / MAX_JOBS > population(r, c) / MAX_POPULATION * 2) {
 				zones(r, c) = TYPE_COMMERCIAL;
 			} else {
-				zones(r, c) = TYPE_INDUSTRIAL;
+				zones(r, c) = TYPE_MIXED;
 			}
 		}
 	}
+
+	cout << "updateZones(): " << timer.elapsed() * 0.001 << " [sec]" << endl;
+}
+
+void Zoning::saveZoneImage(const Mat_<uchar>& zones, char* filename) {
+	Mat tmp;
+	flip(zones, tmp, 0);
+	imwrite(filename, zones);
 }
 
 QVector2D Zoning::gridToCity(const QVector2D& pt) {

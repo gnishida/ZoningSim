@@ -9,38 +9,39 @@ GLWidget3D::GLWidget3D(MainWindow* mainWin) : QGLWidget(QGLFormat(QGL::SampleBuf
 	camera.dz = 1000;
 
 	// 重みを適当にセットする
-	QMap<QString, float> weights;
 	weights["highway_accessibility"] = 30.0f;			// セル内のhighway長が、アクセシビリティに与える影響度
 	weights["avenue_accessibility"] = 30.0f;			// セル内のavenue長が、アクセシビリティに与える影響度
-	weights["streeet_accessibility"] = 3.0f;			// セル内のlocal street長が、アクセシビリティに与える影響度
-
-	
-	weights["industrial_pollution"] = 0.2f;				// 工場が、汚染度に与える影響
-	weights["distance_pollution"] = 0.003f;				// 工場からの距離が、汚染度に与える影響
-	//weights["commercial_activity"] = 0.15f;			// 店がアクティビティ度に与える影響
-	//weights["distance_activity"] = 0.003f;			// 店からの距離が、アクティビティ度に与える影響
+	weights["street_accessibility"] = 3.0f;			// セル内のlocal street長が、アクセシビリティに与える影響度
 
 	weights["population_neighbor"] = 0.15f;				// 人口が、周辺人口に与える影響
-	weights["distance_neighbor_population"] = 0.003f;	// 周辺人口を計算する際の、距離に対する係数
+	weights["distance_neighbor_population"] = 0.005f;	// 周辺人口を計算する際の、距離に対する係数
 	weights["commercial_neighbor"] = 0.15f;				// 店が、周辺商業に与える影響
-	weights["distance_neighbor_commercial"] = 0.003f;	// 周辺商業を計算する際の、距離に対する係数
+	weights["distance_neighbor_commercial"] = 0.004f;	// 周辺商業を計算する際の、距離に対する係数
+	weights["industrial_pollution"] = 0.2f;				// 工場が、汚染度に与える影響
+	weights["distance_pollution"] = 0.003f;				// 工場からの距離が、汚染度に与える影響
 
-
+	weights["accessibility_landvalue"] = 350.0f;		// アクセシビリティが、地価に与える影響度
+	weights["neighbor_population_landvalue"] = 300.0f;	// 周辺人口が、地価に与える影響度
+	weights["neighbor_commercial_landvalue"] = 300.0f;	// 周辺商業が、地価に与える影響度
 	weights["pollution_landvalue"] = -350.0f;			// 汚染度が、地価に与える影響度
 	weights["slope_landvalue"] = -100.0f;				// 地面傾斜が、地価に与える影響度
 	weights["population_landvalue"] = 200.0f;			// 人口が、地価に与える影響度
 	weights["commercialjobs_landvalue"] = 200.0f;		// 商業の仕事量が、地価に与える影響度
 	weights["industrialjobs_landvalue"] = 200.0f;		// 工業の仕事量が、地価に与える影響度
 
+	weights["accessibility_life"] = 0.6f;				// アクセシビリティが、良い生活に与える影響度
 	weights["neighbor_population_life"] = 0.0f;			// 周辺人口が、良い生活に与える影響度
 	weights["neighbor_commercial_life"] = 0.6f;			// 周辺商業が、良い生活に与える影響度
 	weights["pollution_life"] = -1.0f;					// 汚染度が、良い生活に与える影響度
 	weights["slope_life"] = -0.1f;						// 地面傾斜が、良い生活に与える影響度
 	weights["landvalue_life"] = -0.1f;					// 地価が、良い生活に与える影響度
-	weights["population_life"] = -0.05f;				// 人口が、良い生活に与える影響度
+	weights["population_life"] = 0.0f;					// 人口が、良い生活に与える影響度
 	weights["commercialjobs_life"] = 0.05f;				// 商業の仕事量が、良い生活に与える影響度
 	weights["industrialjobs_life"] = -1.0f;				// 工業の仕事量が、良い生活に与える影響度
 
+	weights["accessibility_shop"] = 0.5f;				// アクセシビリティが、店に与える影響度
+	weights["neighbor_population_shop"] = 0.8f;			// 周辺人口が、店に与える影響度
+	weights["neighbor_commercial_shop"] = 0.0f;			// 周辺商業が、店に与える影響度
 	weights["pollution_shop"] = -0.1f;					// 汚染度が、店に与える影響度
 	weights["slope_shop"] = 0.0f;						// 地面傾斜が、店に与える影響度
 	weights["landvalue_shop"] = 0.2f;					// 地価が、店に与える影響度
@@ -48,10 +49,13 @@ GLWidget3D::GLWidget3D(MainWindow* mainWin) : QGLWidget(QGLFormat(QGL::SampleBuf
 	weights["commercialjobs_shop"] = 0.0f;				// 商業の仕事量が、店に与える影響度
 	weights["industrialjobs_shop"] = 0.0f;				// 工業の仕事量が、店に与える影響度
 
-	weights["pollution_factory"] = 1.0f;				// 汚染度が、工場に与える影響度
+	weights["accessibility_factory"] = 0.1f;			// アクセシビリティが、工場に与える影響度
+	weights["neighbor_population_factory"] = -0.2f;		// 周辺人口が、工場に与える影響度
+	weights["neighbor_commercial_factory"] = 0.0f;		// 周辺商業が、工場に与える影響度
+	weights["pollution_factory"] = 0.7f;				// 汚染度が、工場に与える影響度
 	weights["slope_factory"] = 0.0f;					// 地面傾斜が、工場に与える影響度
 	weights["landvalue_factory"] = -0.1f;				// 地価が、工場に与える影響度
-	weights["population_factory"] = -0.5f;				// 人口が、工場に与える影響度
+	weights["population_factory"] = -1.0f;				// 人口が、工場に与える影響度
 	weights["commercialjobs_factory"] = 0.0f;			// 商業の仕事量が、工場に与える影響度
 	weights["industrialjobs_factory"] = 0.0f;			// 工業の仕事量が、工場に与える影響度
 
@@ -185,8 +189,8 @@ void GLWidget3D::drawScene() {
 				glColor4f(0, 1, 1, opacity);
 				glVertex3f(x + w * 1.1f, y, z);
 				glVertex3f(x + w * 1.9f, y, z);
-				glVertex3f(x + w * 1.9f, y + zoning->cell_length * 0.5f  * zoning->activity(r, c), z);
-				glVertex3f(x + w * 1.1f, y + zoning->cell_length * 0.5f  * zoning->activity(r, c), z);
+				glVertex3f(x + w * 1.9f, y + zoning->cell_length * 0.5f  * zoning->neighborPopulation(r, c), z);
+				glVertex3f(x + w * 1.1f, y + zoning->cell_length * 0.5f  * zoning->neighborPopulation(r, c), z);
 				glColor4f(0.5, 0.5, 0.5, opacity);
 				glVertex3f(x + w * 2.1f, y, z);
 				glVertex3f(x + w * 2.9f, y, z);
@@ -221,18 +225,22 @@ void GLWidget3D::drawScene() {
 			} else {
 				if (mainWin->controlWidget->ui.radioButtonZones->isChecked()) {
 					if (zoning->zones(r, c) == Zoning::TYPE_RESIDENTIAL) {
-						glColor4f(1.0f, 0.f, 0.0f, opacity);
+						glColor4f(1, 0.5 - zoning->population(r, c) / Zoning::MAX_POPULATION * 0.5, 0.5 - zoning->population(r, c) / Zoning::MAX_POPULATION * 0.5, opacity);
 					} else if (zoning->zones(r, c) == Zoning::TYPE_COMMERCIAL) {
-						glColor4f(0.0f, 0.0f, 1.0f, opacity);
+						glColor4f(0.5 - zoning->commercialJobs(r, c) / Zoning::MAX_JOBS * 0.5, 0.5 - zoning->commercialJobs(r, c) / Zoning::MAX_JOBS * 0.5, 1, opacity);
 					} else if (zoning->zones(r, c) == Zoning::TYPE_INDUSTRIAL) {
-						glColor4f(1.0f, 1.0f, 0.0f, opacity);
+						glColor4f(1, 1, 0.5 - zoning->industrialJobs(r, c) / Zoning::MAX_JOBS * 0.5, opacity);
+					} else if (zoning->zones(r, c) == Zoning::TYPE_MIXED) {
+						glColor4f(1, 0.5 - zoning->population(r, c) / Zoning::MAX_POPULATION * 0.5 - zoning->commercialJobs(r, c) / Zoning::MAX_JOBS * 0.5, 1, opacity);
 					} else if (zoning->zones(r, c) == Zoning::TYPE_PARK) {
 						glColor4f(0.0f, 0.8f, 0.0f, opacity);
 					}
 				} else if (mainWin->controlWidget->ui.radioButtonAccessibility->isChecked()) {
 					glColor4f(1.0f, 1 - zoning->accessibility(r, c), 1 - zoning->accessibility(r, c), opacity);
-				} else if (mainWin->controlWidget->ui.radioButtonActivity->isChecked()) {
-					glColor4f(1.0f, 1 - zoning->activity(r, c), 1 - zoning->activity(r, c), opacity);
+				} else if (mainWin->controlWidget->ui.radioButtonNeighborPopulation->isChecked()) {
+					glColor4f(1.0f, 1 - zoning->neighborPopulation(r, c), 1 - zoning->neighborPopulation(r, c), opacity);
+				} else if (mainWin->controlWidget->ui.radioButtonNeighborCommercial->isChecked()) {
+					glColor4f(1.0f, 1 - zoning->neighborCommercial(r, c), 1 - zoning->neighborCommercial(r, c), opacity);
 				} else if (mainWin->controlWidget->ui.radioButtonPollution->isChecked()) {
 					glColor4f(1.0f, 1 - zoning->pollution(r, c), 1 - zoning->pollution(r, c), opacity);
 				} else if (mainWin->controlWidget->ui.radioButtonSlope->isChecked()) {
@@ -262,7 +270,6 @@ void GLWidget3D::drawScene() {
 	}
 	glEnd();
 }
-
 
 void GLWidget3D::loadRoads(const QString& filename) {
 	GraphUtil::loadRoads(roads, filename);
