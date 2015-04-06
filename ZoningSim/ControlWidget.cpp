@@ -12,6 +12,7 @@ ControlWidget::ControlWidget(MainWindow* mainWin) : QDockWidget("Control Widget"
 	ui.horizontalSliderOpacity->setMaximum(100);
 	ui.horizontalSliderOpacity->setValue(100);
 	ui.lineEditNumSteps->setText("1");
+	ui.lineEditRandomSeed->setText("0");
 	
 	connect(ui.radioButtonZones, SIGNAL(clicked()), this, SLOT(onViewChanged()));
 	connect(ui.radioButtonAccessibility, SIGNAL(clicked()), this, SLOT(onViewChanged()));
@@ -30,6 +31,7 @@ ControlWidget::ControlWidget(MainWindow* mainWin) : QDockWidget("Control Widget"
 
 	connect(ui.horizontalSliderOpacity, SIGNAL(valueChanged(int)), this, SLOT(onOpacityChanged(int)));
 	
+	connect(ui.pushButtonInit, SIGNAL(clicked()), this, SLOT(onInit()));
 	connect(ui.pushButtonNextStep, SIGNAL(clicked()), this, SLOT(onNextStep()));
 
 	ui.radioButtonZones->setChecked(true);
@@ -42,6 +44,11 @@ void ControlWidget::onViewChanged() {
 }
 
 void ControlWidget::onOpacityChanged(int value) {
+	mainWin->glWidget->updateGL();
+}
+
+void ControlWidget::onInit() {
+	mainWin->glWidget->zoning->init(ui.lineEditRandomSeed->text().toInt());
 	mainWin->glWidget->updateGL();
 }
 

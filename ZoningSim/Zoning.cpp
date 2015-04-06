@@ -26,6 +26,32 @@ Zoning::Zoning(float city_length, int grid_size, const QMap<QString, float>& wei
 	commercialJobs = Mat_<float>::zeros(grid_size, grid_size);
 	industrialJobs = Mat_<float>::zeros(grid_size, grid_size);
 
+
+	init();
+}
+
+/**
+ * 道路をセットする。
+ */
+void Zoning::setRoads(RoadGraph& roads) {
+	this->roads = roads;
+
+	computeAccessibility();
+}
+
+/**
+ * 指定された乱数シードを使って、ゾーンを初期化する。
+ *
+ * @param rand_seed		乱数シード
+ */
+void Zoning::init(int rand_seed) {
+	landValue = Mat_<float>::zeros(grid_size, grid_size);
+	population = Mat_<float>::zeros(grid_size, grid_size);
+	commercialJobs = Mat_<float>::zeros(grid_size, grid_size);
+	industrialJobs = Mat_<float>::zeros(grid_size, grid_size);
+
+	srand(rand_seed);
+
 	// ゾーンをランダムに初期化
 	for (int r = 0; r < grid_size / 4; ++r) {
 		for (int c = 0; c < grid_size / 4; ++c) {
@@ -43,7 +69,6 @@ Zoning::Zoning(float city_length, int grid_size, const QMap<QString, float>& wei
 					}
 				}
 			}
-			//zones(r, c) = Util::genRand(0, 4);
 		}
 	}
 
@@ -72,23 +97,18 @@ Zoning::Zoning(float city_length, int grid_size, const QMap<QString, float>& wei
 	computeShop();
 	computeFactory();
 
-		updateLandValue();
+	updateLandValue();
 
-}
-
-/**
- * 道路をセットする。
- */
-void Zoning::setRoads(RoadGraph& roads) {
-	this->roads = roads;
-
-	computeAccessibility();
+	cout << "Initialized." << endl;
+	cout << endl;
 }
 
 /**
  * シミュレーションを１ステップ進める。
  */
 void Zoning::nextSteps(int numSteps, bool saveZonings) {
+	elapsedTimes.clear();
+
 	for (int iter = 0; iter < numSteps; ++iter) {
 		updateLandValue();
 
@@ -111,7 +131,20 @@ void Zoning::nextSteps(int numSteps, bool saveZonings) {
 		}
 	}
 
-	cout << "next steps done.\n" << endl;
+
+	cout << "computeNeighborPopulation(): " << elapsedTimes["computeNeighborPopulation"] << " [sec]" << endl;
+	cout << "computeNeighborComercial(): " << elapsedTimes["computeNeighborComercial"] << " [sec]" << endl;
+	cout << "computePollution(): " << elapsedTimes["computePollution"] << " [sec]" << endl;
+	cout << "updateLandValue(): " << elapsedTimes["updateLandValue"] << " [sec]" << endl;
+	cout << "updatePeopleAndJobs(): " << elapsedTimes["updatePeopleAndJobs"] << " [sec]" << endl;
+	cout << "computeLife(): " << elapsedTimes["computeLife"] << " [sec]" << endl;
+	cout << "computeShop(): " << elapsedTimes["computeShop"] << " [sec]" << endl;
+	cout << "computeFactory()(): " << elapsedTimes["computeFactory"] << " [sec]" << endl;
+	cout << "updateZones(): " << elapsedTimes["updateZones"] << " [sec]" << endl;
+	cout << endl;
+	cout << "Score: " << computeScore() << endl;
+	cout << "... next steps done.\n" << endl;
+	cout << endl;
 }
 
 /**
@@ -202,7 +235,7 @@ void Zoning::computeNeighborPopulation() {
 		}
 	}
 
-	cout << "computeNeighborPopulation(): " << timer.elapsed() * 0.001 << " [sec]" << endl;
+	elapsedTimes["computeNeighborPopulation"] += timer.elapsed() * 0.001;
 
 #ifdef DEBUG
 	cout << "Neighbor population: " << endl;
@@ -246,7 +279,7 @@ void Zoning::computeNeighborCommercial() {
 		}
 	}
 
-	cout << "computeNeighborComercial(): " << timer.elapsed() * 0.001 << " [sec]" << endl;
+	elapsedTimes["computeNeighborComercial"] += timer.elapsed() * 0.001;
 
 #ifdef DEBUG
 	cout << "Neighbor population: " << endl;
@@ -290,7 +323,7 @@ void Zoning::computePollution() {
 		}
 	}
 
-	cout << "computePollution(): " << timer.elapsed() * 0.001 << " [sec]" << endl;
+	elapsedTimes["computePollution"] += timer.elapsed() * 0.001;
 
 #ifdef DEBUG
 	cout << "Pollution: " << endl;
@@ -323,7 +356,7 @@ void Zoning::updateLandValue() {
 		}
 	}
 
-	cout << "updateLandValue(): " << timer.elapsed() * 0.001 << " [sec]" << endl;
+	elapsedTimes["updateLandValue"] += timer.elapsed() * 0.001;
 
 #ifdef DEBUG
 	cout << "Land value:" << endl;
@@ -359,7 +392,7 @@ void Zoning::updatePeopleAndJobs(float ratio) {
 	removeIndustrialJobs(total_industrialJobs * ratio);
 	addIndustrialJobs(total_industrialJobs * ratio);
 
-	cout << "updatePeopleAndJobs(): " << timer.elapsed() * 0.001 << " [sec]" << endl;
+	elapsedTimes["updatePeopleAndJobs"] += timer.elapsed() * 0.001;
 
 #ifdef DEBUG
 	cout << "People: " << matsum(population) << endl;
@@ -516,7 +549,7 @@ void Zoning::computeLife() {
 	// 最大値でわってnormalizeする
 	life = life / matmax(life);
 
-	cout << "computeLife(): " << timer.elapsed() * 0.001 << " [sec]" << endl;
+	elapsedTimes["computeLife"] += timer.elapsed() * 0.001;
 
 #ifdef DEBUG
 	cout << "Life:" << endl;
@@ -542,7 +575,7 @@ void Zoning::computeShop() {
 	// 最大値でわってnormalizeする
 	shop = shop / matmax(shop);
 
-	cout << "computeShop(): " << timer.elapsed() * 0.001 << " [sec]" << endl;
+	elapsedTimes["computeShop"] += timer.elapsed() * 0.001;
 
 #ifdef DEBUG
 	cout << endl << "Shop:" << endl;
@@ -569,7 +602,7 @@ void Zoning::computeFactory() {
 	// 最大値でわってnormalizeする
 	factory = factory / matmax(factory);
 
-	cout << "computeFactory()(): " << timer.elapsed() * 0.001 << " [sec]" << endl;
+	elapsedTimes["computeFactory"] += timer.elapsed() * 0.001;
 
 #ifdef DEBUG
 	cout << endl << "Factory:" << endl;
@@ -637,6 +670,20 @@ float Zoning::factoryValue(int c, int r) {
 	return expf(v);
 }
 
+/**
+ * スコアを計算する。
+ */
+float Zoning::computeScore() {
+	float score = 0.0f;
+
+	for (int r = 0; r < grid_size; ++r) {
+		for (int c = 0; c < grid_size; ++c) {
+			score += life(r, c) * population(r, c) / MAX_POPULATION;
+		}
+	}
+
+	return score;
+}
 
 /**
  * ゾーンを更新する。
@@ -670,7 +717,7 @@ void Zoning::updateZones() {
 		}
 	}
 
-	cout << "updateZones(): " << timer.elapsed() * 0.001 << " [sec]" << endl;
+	elapsedTimes["updateZones"] += timer.elapsed() * 0.001;
 }
 
 void Zoning::saveZoneImage(const Mat_<uchar>& zones, char* filename) {

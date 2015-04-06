@@ -39,10 +39,13 @@ public:
 	Mat_<float> shop;		// 店をオープンするための指標
 	Mat_<float> factory;	// 工場をオープンするための指標
 
+	QMap<QString, float> elapsedTimes;
+
 public:
 	Zoning(float city_length, int grid_size, const QMap<QString, float>& weights);
 
 	void setRoads(RoadGraph& roads);
+	void init(int rand_seed = 0);
 	void nextSteps(int numSteps, bool saveZonings);
 
 private:
@@ -67,6 +70,7 @@ private:
 	float lifeValue(int x, int y);
 	float shopValue(int x, int y);
 	float factoryValue(int x, int y);
+	float computeScore();
 	void updateZones();
 
 	void saveZoneImage(const Mat_<uchar>& mat, char* filename);
