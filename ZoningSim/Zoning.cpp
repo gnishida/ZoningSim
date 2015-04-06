@@ -25,8 +25,7 @@ Zoning::Zoning(float city_length, int grid_size, const QMap<QString, float>& wei
 	population = Mat_<float>::zeros(grid_size, grid_size);
 	commercialJobs = Mat_<float>::zeros(grid_size, grid_size);
 	industrialJobs = Mat_<float>::zeros(grid_size, grid_size);
-
-
+	
 	init();
 }
 
@@ -53,24 +52,22 @@ void Zoning::init(int rand_seed) {
 	srand(rand_seed);
 
 	// ゾーンをランダムに初期化
-	for (int r = 0; r < grid_size / 4; ++r) {
-		for (int c = 0; c < grid_size / 4; ++c) {
+	for (int r = 0; r < grid_size; ++r) {
+		for (int c = 0; c < grid_size; ++c) {
 			float n = Util::genRand(0, 10);
-			for (int dr = 0; dr < 4; ++dr) {
-				for (int dc = 0; dc < 4; ++dc) {
-					if (n <= 6) {
-						zones(r*4+dr, c*4+dc) = TYPE_RESIDENTIAL;
-					} else if (n <= 8) {
-						zones(r*4+dr, c*4+dc) = TYPE_COMMERCIAL;
-					} else if (n <= 9) {
-						zones(r*4+dr, c*4+dc) = TYPE_MIXED;
-					} else {
-						zones(r*4+dr, c*4+dc) = TYPE_INDUSTRIAL;
-					}
-				}
+
+			if (n <= 6) {
+				zones(r, c) = TYPE_RESIDENTIAL;
+			} else if (n <= 8) {
+				zones(r, c) = TYPE_COMMERCIAL;
+			} else if (n <= 9) {
+				zones(r, c) = TYPE_MIXED;
+			} else {
+				zones(r, c) = TYPE_INDUSTRIAL;
 			}
 		}
 	}
+
 
 	// 人、仕事を初期化
 	for (int r = 0; r < grid_size; ++r) {
@@ -93,12 +90,13 @@ void Zoning::init(int rand_seed) {
 	computeNeighborCommercial();
 	computePollution();
 
+	updateLandValue();
+
 	computeLife();
 	computeShop();
 	computeFactory();
 
-	updateLandValue();
-
+	cout << "Score: " << computeScore() << endl;
 	cout << "Initialized." << endl;
 	cout << endl;
 }
@@ -106,8 +104,13 @@ void Zoning::init(int rand_seed) {
 /**
  * シミュレーションを１ステップ進める。
  */
-void Zoning::nextSteps(int numSteps, bool saveZonings) {
+void Zoning::nextSteps(int numSteps, float move_rate, bool saveScores, bool saveZonings) {
 	elapsedTimes.clear();
+
+	FILE* fp;
+	if (saveScores) {
+		fp = fopen("scores.txt", "w");
+	}
 
 	for (int iter = 0; iter < numSteps; ++iter) {
 		updateLandValue();
@@ -116,7 +119,7 @@ void Zoning::nextSteps(int numSteps, bool saveZonings) {
 		computeShop();
 		computeFactory();
 
-		updatePeopleAndJobs(0.5f);
+		updatePeopleAndJobs(move_rate);
 
 		updateZones();
 
@@ -124,11 +127,19 @@ void Zoning::nextSteps(int numSteps, bool saveZonings) {
 		computeNeighborCommercial();
 		computePollution();
 
+		if (saveScores) {
+			fprintf(fp, "%lf\n", computeScore());
+		}
+
 		if (saveZonings) {
 			char filename[256];
 			sprintf(filename, "zone_%d.png", iter);
 			saveZoneImage(zones, filename);
 		}
+	}
+
+	if (saveScores) {
+		fclose(fp);
 	}
 
 
@@ -333,6 +344,7 @@ void Zoning::computePollution() {
 
 /**
  * 地価を更新する。
+ * 地価は、0からMAX_LANDVALUEの範囲の値をとる。
  */
 void Zoning::updateLandValue() {
 	QElapsedTimer timer;
@@ -546,9 +558,6 @@ void Zoning::computeLife() {
 		}
 	}
 
-	// 最大値でわってnormalizeする
-	life = life / matmax(life);
-
 	elapsedTimes["computeLife"] += timer.elapsed() * 0.001;
 
 #ifdef DEBUG
@@ -572,9 +581,6 @@ void Zoning::computeShop() {
 		}
 	}
 
-	// 最大値でわってnormalizeする
-	shop = shop / matmax(shop);
-
 	elapsedTimes["computeShop"] += timer.elapsed() * 0.001;
 
 #ifdef DEBUG
@@ -594,13 +600,9 @@ void Zoning::computeFactory() {
 
 	for (int r = 0; r < grid_size; ++r) {
 		for (int c = 0; c < grid_size; ++c) {
-			float hoge = factoryValue(c, r);
 			factory(r, c) = factoryValue(c, r);
 		}
 	}
-
-	// 最大値でわってnormalizeする
-	factory = factory / matmax(factory);
 
 	elapsedTimes["computeFactory"] += timer.elapsed() * 0.001;
 
@@ -613,7 +615,7 @@ void Zoning::computeFactory() {
 /**
  * 指定されたセルの生活価値を返却する。
  */
-float Zoning::lifeValue(int x, int y) {
+float Zoning::lifeValue(int x, int y, float max_value) {
 	float v = weights["accessibility_life"] * accessibility(y, x)
 		+ weights["neighbor_population_life"] * neighborPopulation(y, x)
 		+ weights["neighbor_commercial_life"] * neighborCommercial(y, x)
@@ -625,14 +627,10 @@ float Zoning::lifeValue(int x, int y) {
 		+ weights["industrialjobs_life"] * industrialJobs(y, x) / MAX_JOBS;
 
 	// 桁あふれを防ぐため
-	if (v > 20.0f) {
-		v = 20.0f;
-	}
-
-	return expf(v);
+	return expf(v - max_value);
 }
 
-float Zoning::shopValue(int c, int r) {
+float Zoning::shopValue(int c, int r, float max_value) {
 	float v = weights["accessibility_shop"] * accessibility(r, c)
 		+ weights["neighbor_population_shop"] * neighborPopulation(r, c)
 		+ weights["neighbor_commercial_shop"] * neighborCommercial(r, c)
@@ -644,14 +642,10 @@ float Zoning::shopValue(int c, int r) {
 		+ weights["industrialjobs_shop"] * industrialJobs(r, c) / MAX_JOBS;
 
 	// 桁あふれを防ぐため
-	if (v > 20.0f) {
-		v = 20.0f;
-	}
-
-	return expf(v);
+	return expf(v - max_value);
 }
 
-float Zoning::factoryValue(int c, int r) {
+float Zoning::factoryValue(int c, int r, float max_value) {
 	float v = weights["accessibility_factory"] * accessibility(r, c)
 		+ weights["neighbor_population_factory"] * neighborPopulation(r, c)
 		+ weights["neighbor_commercial_factory"] * neighborCommercial(r, c)
@@ -663,11 +657,7 @@ float Zoning::factoryValue(int c, int r) {
 		+ weights["industrialjobs_factory"] * industrialJobs(r, c) / MAX_JOBS;
 
 	// 桁あふれを防ぐため
-	if (v > 20.0f) {
-		v = 20.0f;
-	}
-
-	return expf(v);
+	return expf(v - max_value);
 }
 
 /**
@@ -675,14 +665,18 @@ float Zoning::factoryValue(int c, int r) {
  */
 float Zoning::computeScore() {
 	float score = 0.0f;
+	float total_population = 0.0f;
 
 	for (int r = 0; r < grid_size; ++r) {
 		for (int c = 0; c < grid_size; ++c) {
-			score += life(r, c) * population(r, c) / MAX_POPULATION;
+			score += life(r, c) * population(r, c);
+			score += shop(r, c) * commercialJobs(r, c);
+			score += factory(r, c) * industrialJobs(r, c);
+			total_population += population(r, c) + commercialJobs(r, c) + industrialJobs(r, c);
 		}
 	}
 
-	return score;
+	return score / total_population;
 }
 
 /**

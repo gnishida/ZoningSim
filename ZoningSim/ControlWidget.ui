@@ -24,7 +24,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>430</y>
+      <y>470</y>
       <width>191</width>
       <height>211</height>
      </rect>
@@ -536,7 +536,7 @@
       <x>100</x>
       <y>386</y>
       <width>101</width>
-      <height>31</height>
+      <height>71</height>
      </rect>
     </property>
     <property name="text">
@@ -570,7 +570,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>400</y>
+      <y>440</y>
       <width>91</width>
       <height>21</height>
      </rect>
@@ -613,6 +613,42 @@
     </property>
     <property name="text">
      <string>Initialize</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="checkBoxSaveScores">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>420</y>
+      <width>91</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>save scores</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_6">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>400</y>
+      <width>51</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>move rate:</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEditMoveRate">
+    <property name="geometry">
+     <rect>
+      <x>63</x>
+      <y>400</y>
+      <width>31</width>
+      <height>20</height>
+     </rect>
     </property>
    </widget>
   </widget>

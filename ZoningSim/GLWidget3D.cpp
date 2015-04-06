@@ -20,8 +20,8 @@ GLWidget3D::GLWidget3D(MainWindow* mainWin) : QGLWidget(QGLFormat(QGL::SampleBuf
 	weights["industrial_pollution"] = 0.2f;				// 工場が、汚染度に与える影響
 	weights["distance_pollution"] = 0.003f;				// 工場からの距離が、汚染度に与える影響
 
-	weights["accessibility_landvalue"] = 350.0f;		// アクセシビリティが、地価に与える影響度
-	weights["neighbor_population_landvalue"] = 300.0f;	// 周辺人口が、地価に与える影響度
+	weights["accessibility_landvalue"] = 450.0f;		// アクセシビリティが、地価に与える影響度
+	weights["neighbor_population_landvalue"] = 100.0f;	// 周辺人口が、地価に与える影響度
 	weights["neighbor_commercial_landvalue"] = 300.0f;	// 周辺商業が、地価に与える影響度
 	weights["pollution_landvalue"] = -350.0f;			// 汚染度が、地価に与える影響度
 	weights["slope_landvalue"] = -100.0f;				// 地面傾斜が、地価に与える影響度
@@ -60,6 +60,7 @@ GLWidget3D::GLWidget3D(MainWindow* mainWin) : QGLWidget(QGLFormat(QGL::SampleBuf
 	weights["industrialjobs_factory"] = 0.0f;			// 工業の仕事量が、工場に与える影響度
 
 	zoning = new Zoning(9000, 60, weights);
+	//zoning = new Zoning(1200, 8, weights);
 	loadRoads("osm/lafayette.gsm");
 }
 

@@ -46,7 +46,7 @@ public:
 
 	void setRoads(RoadGraph& roads);
 	void init(int rand_seed = 0);
-	void nextSteps(int numSteps, bool saveZonings);
+	void nextSteps(int numSteps, float move_rate, bool saveScores, bool saveZonings);
 
 private:
 	void computeAccessibility();
@@ -67,9 +67,9 @@ private:
 	void computeLife();
 	void computeShop();
 	void computeFactory();
-	float lifeValue(int x, int y);
-	float shopValue(int x, int y);
-	float factoryValue(int x, int y);
+	float lifeValue(int x, int y, float max_value = 1.0f);
+	float shopValue(int x, int y, float max_value = 1.0f);
+	float factoryValue(int x, int y, float max_value = 1.0f);
 	float computeScore();
 	void updateZones();
 

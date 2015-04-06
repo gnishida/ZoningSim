@@ -11,8 +11,10 @@ ControlWidget::ControlWidget(MainWindow* mainWin) : QDockWidget("Control Widget"
 	ui.horizontalSliderOpacity->setMinimum(0);
 	ui.horizontalSliderOpacity->setMaximum(100);
 	ui.horizontalSliderOpacity->setValue(100);
-	ui.lineEditNumSteps->setText("1");
 	ui.lineEditRandomSeed->setText("0");
+	ui.lineEditNumSteps->setText("100");
+	ui.lineEditMoveRate->setText("0.5");
+	ui.checkBoxSaveScores->setChecked(true);
 	
 	connect(ui.radioButtonZones, SIGNAL(clicked()), this, SLOT(onViewChanged()));
 	connect(ui.radioButtonAccessibility, SIGNAL(clicked()), this, SLOT(onViewChanged()));
@@ -53,6 +55,6 @@ void ControlWidget::onInit() {
 }
 
 void ControlWidget::onNextStep() {
-	mainWin->glWidget->zoning->nextSteps(ui.lineEditNumSteps->text().toInt(), ui.checkBoxSaveZonings->isChecked());
+	mainWin->glWidget->zoning->nextSteps(ui.lineEditNumSteps->text().toInt(), ui.lineEditMoveRate->text().toFloat(), ui.checkBoxSaveScores->isChecked(), ui.checkBoxSaveZonings->isChecked());
 	mainWin->glWidget->updateGL();
 }
