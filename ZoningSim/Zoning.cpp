@@ -102,15 +102,24 @@ void Zoning::init(int rand_seed) {
 }
 
 /**
- * シミュレーションを１ステップ進める。
+ * シミュレーションをnumStepsステップ進める。
+ *
+ * @param numSteps			シミュレーションのステップ数
+ * @param more_rate			各ステップで動かす人・仕事の割合
+ * @param saveScores		各ステップのスコアを保存するか？
+ * @param saveBestZoning	ベストスコアのゾーニングを保存するか？
+ * @param saveZonings		各ステップのゾーニングを保存するか？
  */
-void Zoning::nextSteps(int numSteps, float move_rate, bool saveScores, bool saveZonings) {
+void Zoning::nextSteps(int numSteps, float move_rate, bool saveScores, bool saveBestZoning, bool saveZonings) {
 	elapsedTimes.clear();
 
 	FILE* fp;
 	if (saveScores) {
 		fp = fopen("scores.txt", "w");
 	}
+
+	Mat_<uchar> best_zones;
+	float best_score = -numeric_limits<float>::max();
 
 	for (int iter = 0; iter < numSteps; ++iter) {
 		updateLandValue();
@@ -127,8 +136,15 @@ void Zoning::nextSteps(int numSteps, float move_rate, bool saveScores, bool save
 		computeNeighborCommercial();
 		computePollution();
 
+		float score = computeScore();
+
 		if (saveScores) {
-			fprintf(fp, "%lf\n", computeScore());
+			fprintf(fp, "%lf\n", score);
+		}
+
+		if (score > best_score) {
+			best_score = score;
+			zones.copyTo(best_zones);
 		}
 
 		if (saveZonings) {
@@ -140,6 +156,14 @@ void Zoning::nextSteps(int numSteps, float move_rate, bool saveScores, bool save
 
 	if (saveScores) {
 		fclose(fp);
+	}
+
+	if (saveBestZoning) {
+		cout << "Best score: " << best_score << endl;
+		cout << endl;
+		saveZoneImage(best_zones, "best_zone.png");
+
+		computeFeature(best_zones);
 	}
 
 
@@ -715,9 +739,27 @@ void Zoning::updateZones() {
 }
 
 void Zoning::saveZoneImage(const Mat_<uchar>& zones, char* filename) {
-	Mat tmp;
-	flip(zones, tmp, 0);
-	imwrite(filename, zones);
+	Mat tmp(grid_size, grid_size, CV_8UC3);
+	for (int r = 0; r < grid_size; ++r) {
+		for (int c = 0; c < grid_size; ++c) {
+			Vec3b p;
+			if (zones(r, c) == TYPE_RESIDENTIAL) {
+				p = Vec3b(0, 0, 255);
+			} else if (zones(r, c) == TYPE_COMMERCIAL) {
+				p = Vec3b(255, 0, 0);
+			} else if (zones(r, c) == TYPE_INDUSTRIAL) {
+				p = Vec3b(0, 255, 255);
+			} else if (zones(r, c) == TYPE_MIXED) {
+				p = Vec3b(255, 0, 255);
+			} else if (zones(r, c) == TYPE_PARK) {
+				p = Vec3b(0, 204, 0);
+			}
+			tmp.at<Vec3b>(r, c) = p;
+		}
+	}
+
+	flip(tmp, tmp, 0);
+	imwrite(filename, tmp);
 }
 
 QVector2D Zoning::gridToCity(const QVector2D& pt) {
@@ -745,4 +787,33 @@ float Zoning::matmax(Mat_<float>& mat) {
 	return temp(0, 0);
 }
 
+void Zoning::computeFeature(const Mat_<uchar>& zones) {
+	Mat_<float> f = Mat_<float>::zeros(5, 5);
+	int count = 0;
 
+	for (int r = 0; r < grid_size; ++r) {
+		for (int c = 0; c < grid_size; ++c) {
+			for (int dr = -1; dr <= 1; ++dr) {
+				if (r + dr < 0 || r + dr >= grid_size) continue;
+				for (int dc = -1; dc <= 1; ++dc) {
+					if (c + dc < 0 || c + dc >= grid_size) continue;
+					if (dr == 0 && dc == 0) continue;
+					if (dr != 0 && dc != 0) continue;
+
+					int t1 = zones(r, c);
+					int t2 = zones(r+dr, c+dc);
+					if (t1 <= t2) {
+						f(t1, t2)++;
+					} else {
+						f(t2, t1)++;
+					}
+					count++;
+				}
+			}
+		}
+	}
+
+	f /= (float)count;
+
+	cout << f << endl;
+}

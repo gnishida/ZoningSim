@@ -15,6 +15,7 @@ ControlWidget::ControlWidget(MainWindow* mainWin) : QDockWidget("Control Widget"
 	ui.lineEditNumSteps->setText("100");
 	ui.lineEditMoveRate->setText("0.5");
 	ui.checkBoxSaveScores->setChecked(true);
+	ui.checkBoxSaveBestZoning->setChecked(true);
 	
 	connect(ui.radioButtonZones, SIGNAL(clicked()), this, SLOT(onViewChanged()));
 	connect(ui.radioButtonAccessibility, SIGNAL(clicked()), this, SLOT(onViewChanged()));
@@ -55,6 +56,6 @@ void ControlWidget::onInit() {
 }
 
 void ControlWidget::onNextStep() {
-	mainWin->glWidget->zoning->nextSteps(ui.lineEditNumSteps->text().toInt(), ui.lineEditMoveRate->text().toFloat(), ui.checkBoxSaveScores->isChecked(), ui.checkBoxSaveZonings->isChecked());
+	mainWin->glWidget->zoning->nextSteps(ui.lineEditNumSteps->text().toInt(), ui.lineEditMoveRate->text().toFloat(), ui.checkBoxSaveScores->isChecked(), ui.checkBoxSaveBestZoning->isChecked(), ui.checkBoxSaveZonings->isChecked());
 	mainWin->glWidget->updateGL();
 }

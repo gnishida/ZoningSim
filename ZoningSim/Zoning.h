@@ -46,7 +46,7 @@ public:
 
 	void setRoads(RoadGraph& roads);
 	void init(int rand_seed = 0);
-	void nextSteps(int numSteps, float move_rate, bool saveScores, bool saveZonings);
+	void nextSteps(int numSteps, float move_rate, bool saveScores, bool saveBestZoning, bool saveZonings);
 
 private:
 	void computeAccessibility();
@@ -78,5 +78,7 @@ private:
 	QVector2D cityToGrid(const QVector2D& pt);
 	float matsum(Mat_<float>& mat);
 	float matmax(Mat_<float>& mat);
+
+	void computeFeature(const Mat_<uchar>& zones);
 };
 
