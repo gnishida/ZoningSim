@@ -9,6 +9,7 @@ GLWidget3D::GLWidget3D(MainWindow* mainWin) : QGLWidget(QGLFormat(QGL::SampleBuf
 	camera.dz = 1000;
 
 	// 重みを適当にセットする
+	QMap<QString, float> weights;
 	weights["highway_accessibility"] = 30.0f;			// セル内のhighway長が、アクセシビリティに与える影響度
 	weights["avenue_accessibility"] = 30.0f;			// セル内のavenue長が、アクセシビリティに与える影響度
 	weights["street_accessibility"] = 3.0f;			// セル内のlocal street長が、アクセシビリティに与える影響度

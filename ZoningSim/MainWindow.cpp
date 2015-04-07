@@ -29,7 +29,7 @@ void MainWindow::onLoadRoads() {
 }
 
 void MainWindow::onParameters() {
-	ParameterSettingWidget dlg(this, glWidget->weights);
+	ParameterSettingWidget dlg(this, glWidget->zoning->weights);
 	if (dlg.exec() != QDialog::Accepted) {
 		return;
 	}

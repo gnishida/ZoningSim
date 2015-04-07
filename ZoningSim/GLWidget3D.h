@@ -18,7 +18,6 @@ public:
 	QPoint lastPos;
 	Zoning* zoning;
 	RoadGraph roads;
-	QMap<QString, float> weights;
 
 public:
 	GLWidget3D(MainWindow *parent);
