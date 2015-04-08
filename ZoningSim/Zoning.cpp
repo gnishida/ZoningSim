@@ -162,8 +162,6 @@ void Zoning::nextSteps(int numSteps, float move_rate, bool saveScores, bool save
 		cout << "Best score: " << best_score << endl;
 		cout << endl;
 		saveZoneImage(best_zones, "best_zone.png");
-
-		computeFeature(best_zones);
 	}
 
 
@@ -180,6 +178,26 @@ void Zoning::nextSteps(int numSteps, float move_rate, bool saveScores, bool save
 	cout << "Score: " << computeScore() << endl;
 	cout << "... next steps done.\n" << endl;
 	cout << endl;
+}
+
+void Zoning::testRandomGeneration(int num) {
+	FILE* fp = fopen("features.txt", "w");
+
+	time_t timer;
+	time(&timer);
+	for (int iter = 0; iter < num; ++iter) {
+		init(timer + iter);
+
+		nextSteps(10, 0.5, false, false, false);
+
+		vector<float> feature = computeFeature(zones);
+		for (int k = 0; k < feature.size(); ++k) {
+			fprintf(fp, "%lf,", feature[k]);
+		}
+		fprintf(fp, "%lf\n", computeScore());
+	}
+
+	fclose(fp);
 }
 
 /**
@@ -787,7 +805,7 @@ float Zoning::matmax(Mat_<float>& mat) {
 	return temp(0, 0);
 }
 
-void Zoning::computeFeature(const Mat_<uchar>& zones) {
+vector<float> Zoning::computeFeature(const Mat_<uchar>& zones) {
 	Mat_<float> f = Mat_<float>::zeros(5, 5);
 	int count = 0;
 
@@ -802,11 +820,7 @@ void Zoning::computeFeature(const Mat_<uchar>& zones) {
 
 					int t1 = zones(r, c);
 					int t2 = zones(r+dr, c+dc);
-					if (t1 <= t2) {
-						f(t1, t2)++;
-					} else {
-						f(t2, t1)++;
-					}
+					f(t1, t2)++;
 					count++;
 				}
 			}
@@ -815,5 +829,13 @@ void Zoning::computeFeature(const Mat_<uchar>& zones) {
 
 	f /= (float)count;
 
-	cout << f << endl;
+	vector<float> ret;
+	for (int r = 0; r < f.rows; ++r) {
+		for (int c = r; c < f.cols; ++c) {
+			ret.push_back(f(r, c));
+		}
+	}
+	
+	return ret;
 }
+

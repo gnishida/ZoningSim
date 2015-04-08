@@ -47,6 +47,7 @@ public:
 	void setRoads(RoadGraph& roads);
 	void init(int rand_seed = 0);
 	void nextSteps(int numSteps, float move_rate, bool saveScores, bool saveBestZoning, bool saveZonings);
+	void testRandomGeneration(int num);
 
 private:
 	void computeAccessibility();
@@ -79,6 +80,6 @@ private:
 	float matsum(Mat_<float>& mat);
 	float matmax(Mat_<float>& mat);
 
-	void computeFeature(const Mat_<uchar>& zones);
+	vector<float> computeFeature(const Mat_<uchar>& zones);
 };
 

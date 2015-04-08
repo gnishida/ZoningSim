@@ -21,5 +21,6 @@ public slots:
 	void onOpacityChanged(int);
 	void onInit();
 	void onNextStep();
+	void onRandomGeneration();
 };
 

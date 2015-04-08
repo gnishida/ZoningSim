@@ -16,6 +16,7 @@ ControlWidget::ControlWidget(MainWindow* mainWin) : QDockWidget("Control Widget"
 	ui.lineEditMoveRate->setText("0.5");
 	ui.checkBoxSaveScores->setChecked(true);
 	ui.checkBoxSaveBestZoning->setChecked(true);
+	ui.lineEditNumRandomGeneration->setText("10");
 	
 	connect(ui.radioButtonZones, SIGNAL(clicked()), this, SLOT(onViewChanged()));
 	connect(ui.radioButtonAccessibility, SIGNAL(clicked()), this, SLOT(onViewChanged()));
@@ -36,6 +37,7 @@ ControlWidget::ControlWidget(MainWindow* mainWin) : QDockWidget("Control Widget"
 	
 	connect(ui.pushButtonInit, SIGNAL(clicked()), this, SLOT(onInit()));
 	connect(ui.pushButtonNextStep, SIGNAL(clicked()), this, SLOT(onNextStep()));
+	connect(ui.pushButtonRandomGeneration, SIGNAL(clicked()), this, SLOT(onRandomGeneration()));
 
 	ui.radioButtonZones->setChecked(true);
 
@@ -58,4 +60,8 @@ void ControlWidget::onInit() {
 void ControlWidget::onNextStep() {
 	mainWin->glWidget->zoning->nextSteps(ui.lineEditNumSteps->text().toInt(), ui.lineEditMoveRate->text().toFloat(), ui.checkBoxSaveScores->isChecked(), ui.checkBoxSaveBestZoning->isChecked(), ui.checkBoxSaveZonings->isChecked());
 	mainWin->glWidget->updateGL();
+}
+
+void ControlWidget::onRandomGeneration() {
+	mainWin->glWidget->zoning->testRandomGeneration(ui.lineEditNumRandomGeneration->text().toInt());
 }
